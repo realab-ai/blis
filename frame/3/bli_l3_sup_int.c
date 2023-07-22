@@ -113,8 +113,11 @@ err_t bli_gemmsup_int
 		// Decide which algorithm to use (block-panel var2m or panel-block
 		// var1n) based on the number of micropanels in the m and n dimensions.
 		// Also, recalculate the automatic thread factorization.
-		if         ( mu >= nu )    use_bp = TRUE;
-		else /* if ( mu <  nu ) */ use_bp = FALSE;
+		if         ( mu > nu )    use_bp = TRUE;
+		else if    ( mu < nu )    use_bp = FALSE;
+		else if    ( MR > NR )    use_bp = TRUE;
+		else                      use_bp = FALSE;
+
 
 		// If the parallel thread factorization was automatic, we update it
 		// with a new factorization based on the matrix dimensions in units
@@ -145,10 +148,17 @@ err_t bli_gemmsup_int
 
 		if ( use_bp )
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var2m primary\n" );
-			#endif
+			if (bli_thrinfo_am_chief( thread )
+				&&bli_info_get_enable_diagnosis()) 
+			{
+				//printf( "bli_l3_sup_int(): var2m primary\n" );
+				char *storeBuf[8] = {"RRR","RRC","RCR","RCC","CRR","CRC","CCR","CCC"};
+				char *dtBuf[4] = {"S","SC","D", "DC"};
+				printf(" BP m   mr    n   nr   dt  CAB  KER   TR\n");
+				printf("%5d%5d%5d%5d%5s%5s%5s%5s\n", 
+						(int)m, (int)MR, (int)n, (int)NR, 
+						dtBuf[dt], storeBuf[stor_id], row_pref? "ROW":"COL", "F");
+			}
 			// block-panel macrokernel; m -> mc, mr; n -> nc, nr: var2()
 			bli_gemmsup_ref_var2m( BLIS_NO_TRANSPOSE,
 			                       alpha, a, b, beta, c,
@@ -156,10 +166,17 @@ err_t bli_gemmsup_int
 		}
 		else // use_pb
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var1n primary\n" );
-			#endif
+			if (bli_thrinfo_am_chief( thread )
+				&&bli_info_get_enable_diagnosis())
+			{
+				//printf( "bli_l3_sup_int(): var1n primary\n" );
+				char *storeBuf[8] = {"RRR","RRC","RCR","RCC","CRR","CRC","CCR","CCC"};
+				char *dtBuf[4] = {"S","SC","D", "DC"};
+				printf(" PB m   mr    n   nr   dt  CAB  KER   TR\n");
+				printf("%5d%5d%5d%5d%5s%5s%5s%5s\n", 
+						(int)m, (int)MR, (int)n, (int)NR, 
+						dtBuf[dt], storeBuf[stor_id], row_pref? "ROW":"COL", "F");
+			}
 			// panel-block macrokernel; m -> nc*,mr; n -> mc*,nr: var1()
 			bli_gemmsup_ref_var1n( BLIS_NO_TRANSPOSE,
 			                       alpha, a, b, beta, c,
@@ -179,8 +196,10 @@ err_t bli_gemmsup_int
 		// Decide which algorithm to use (block-panel var2m or panel-block
 		// var1n) based on the number of micropanels in the m and n dimensions.
 		// Also, recalculate the automatic thread factorization.
-		if         ( mu >= nu )    use_bp = TRUE;
-		else /* if ( mu <  nu ) */ use_bp = FALSE;
+		if         ( mu > nu )    use_bp = TRUE;
+		else if    ( mu < nu )    use_bp = FALSE;
+		else if    ( MR > NR )    use_bp = TRUE;
+		else                      use_bp = FALSE;
 
 		// If the parallel thread factorization was automatic, we update it
 		// with a new factorization based on the matrix dimensions in units
@@ -211,10 +230,17 @@ err_t bli_gemmsup_int
 
 		if ( use_bp )
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var2m non-primary\n" );
-			#endif
+			if ( bli_thrinfo_am_chief( thread )
+				&&bli_info_get_enable_diagnosis()) 
+			{
+				//printf( "bli_l3_sup_int(): var2m non-primary\n" );
+				char *storeBuf[8] = {"RRR","RRC","RCR","RCC","CRR","CRC","CCR","CCC"};
+				char *dtBuf[4] = {"S","SC","D", "DC"};
+				printf(" BP m   mr    n   nr   dt  CAB  KER   TR\n");
+				printf("%5d%5d%5d%5d%5s%5s%5s%5s\n", 
+						(int)m, (int)MR, (int)n, (int)NR, 
+						dtBuf[dt], storeBuf[stor_id], row_pref? "ROW":"COL", "T");
+			}
 			// panel-block macrokernel; m -> nc, nr; n -> mc, mr: var2() + trans
 			bli_gemmsup_ref_var2m( BLIS_TRANSPOSE,
 			                       alpha, a, b, beta, c,
@@ -222,10 +248,17 @@ err_t bli_gemmsup_int
 		}
 		else // use_pb
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var1n non-primary\n" );
-			#endif
+			if ( bli_thrinfo_am_chief( thread )
+				&&bli_info_get_enable_diagnosis()) 
+			{
+				//printf( "bli_l3_sup_int(): var1n non-primary\n" );
+				char *storeBuf[8] = {"RRR","RRC","RCR","RCC","CRR","CRC","CCR","CCC"};
+				char *dtBuf[4] = {"S","SC","D", "DC"};
+				printf(" PB m   mr    n   nr   dt  CAB  KER   TR\n");
+				printf("%5d%5d%5d%5d%5s%5s%5s%5s\n", 
+						(int)m, (int)MR, (int)n, (int)NR, 
+						dtBuf[dt], storeBuf[stor_id], row_pref? "ROW":"COL", "T");
+			}
 			// block-panel macrokernel; m -> mc*,nr; n -> nc*,mr: var1() + trans
 			bli_gemmsup_ref_var1n( BLIS_TRANSPOSE,
 			                       alpha, a, b, beta, c,
@@ -321,10 +354,6 @@ err_t bli_gemmtsup_int
 
 		if ( use_bp )
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var2m primary\n" );
-			#endif
 			// block-panel macrokernel; m -> mc, mr; n -> nc, nr: var2()
 #if 0
 			bli_gemmtsup_ref_var2m( BLIS_NO_TRANSPOSE,
@@ -334,10 +363,6 @@ err_t bli_gemmtsup_int
 		}
 		else // use_pb
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var1n primary\n" );
-			#endif
 			// panel-block macrokernel; m -> nc*,mr; n -> mc*,nr: var1()
 #if 0
 			bli_gemmtsup_ref_var1n( BLIS_NO_TRANSPOSE,
@@ -391,10 +416,6 @@ err_t bli_gemmtsup_int
 
 		if ( use_bp )
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var2m non-primary\n" );
-			#endif
 			// panel-block macrokernel; m -> nc, nr; n -> mc, mr: var2() + trans
 #if 0
 			bli_gemmtsup_ref_var2m( BLIS_TRANSPOSE,
@@ -404,10 +425,6 @@ err_t bli_gemmtsup_int
 		}
 		else // use_pb
 		{
-			#ifdef TRACEVAR
-			if ( bli_thrinfo_am_chief( thread ) )
-			printf( "bli_l3_sup_int(): var1n non-primary\n" );
-			#endif
 			// block-panel macrokernel; m -> mc*,nr; n -> nc*,mr: var1() + trans
 #if 0
 			bli_gemmtsup_ref_var1n( BLIS_TRANSPOSE,

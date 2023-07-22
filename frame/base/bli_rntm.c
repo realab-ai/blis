@@ -683,11 +683,11 @@ void bli_rntm_print
 	dim_t   jr = bli_rntm_jr_ways( rntm );
 	dim_t   ir = bli_rntm_ir_ways( rntm );
 
-	printf( "thread impl: %d\n", ti );
-	printf( "rntm contents    nt  jc  pc  ic  jr  ir\n" );
-	printf( "autofac? %1d | %4d%4d%4d%4d%4d%4d\n", (int)af,
-	                                               (int)nt, (int)jc, (int)pc,
-	                                               (int)ic, (int)jr, (int)ir );
+	char *thread_impl[4] = {"SNG","OMP","PTH","HPX"};
+	printf( "%-3s nt   jc   pc   ic   jr   ir\n", thread_impl[ti]  );
+	printf( "%-3s %-5d%-5d%-5d%-5d%-5d%-5d\n", (int)af? "A":"M",
+			(int)nt, (int)jc, (int)pc,
+			(int)ic, (int)jr, (int)ir );
 }
 
 // -----------------------------------------------------------------------------

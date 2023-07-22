@@ -50,7 +50,9 @@ static func_t packm_struc_cxk_kers[BLIS_NUM_PACK_SCHEMA_TYPES] =
         NULL,                      bli_zpackm_struc_cxk,  } },
 };
 
+#ifdef BLIS_ENABLE_GEMM_MD
 static void_fp GENARRAY2_ALL(packm_struc_cxk_md,packm_struc_cxk_md);
+#endif
 
 void bli_packm_blk_var1
      (
@@ -123,12 +125,13 @@ void bli_packm_blk_var1
 	// Query the datatype-specific function pointer from the func_t object.
 	packm_ker_ft packm_ker_cast = bli_func_get_dt( dt_p, packm_kers );
 
+#ifdef BLIS_ENABLE_GEMM_MD
 	// For mixed-precision gemm, select the proper kernel (only dense panels).
 	if ( dt_c != dt_p )
 	{
 		packm_ker_cast = packm_struc_cxk_md[ dt_c ][ dt_p ];
 	}
-
+#endif
 	// Query the address of the packm params field of the obj_t. The user might
 	// have set this field in order to specify a custom packm kernel.
 	packm_blk_var1_params_t* params = bli_obj_pack_params( c );

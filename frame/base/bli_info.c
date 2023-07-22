@@ -204,6 +204,22 @@ gint_t bli_info_get_enable_sandbox( void )
 	return 0;
 #endif
 }
+gint_t bli_info_get_enable_diagnosis( void )
+{
+#ifdef BLIS_ENABLE_DIAGNOSIS
+	return 1;
+#else
+	return 0;
+#endif
+}
+gint_t bli_info_get_enable_fip( void )
+{
+#ifdef BLIS_ENABLE_FIP
+	return 1;
+#else
+	return 0;
+#endif
+}
 
 
 // -- Kernel implementation-related --------------------------------------------

@@ -172,6 +172,12 @@
 #define BLIS_DISABLE_SUP_HANDLING
 #endif
 
+#if @enable_fip@
+#define BLIS_ENABLE_FIP
+#else
+#define BLIS_DISABLE_FIP
+#endif
+
 #if @enable_memkind@
 #define BLIS_ENABLE_MEMKIND
 #else
@@ -208,5 +214,8 @@
 #define BLIS_DISABLE_COMPLEX_RETURN_INTEL
 #endif
 
+#if @enable_diagnosis@
+#define BLIS_ENABLE_DIAGNOSIS
+#endif
 
 #endif

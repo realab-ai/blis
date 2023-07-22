@@ -70,6 +70,15 @@ err_t bli_gemmsup
 		const dim_t n  = bli_obj_width( c );
 		const dim_t k  = bli_obj_width_after_trans( a );
 
+		if (bli_info_get_enable_diagnosis())
+		{
+			printf("%-3s m   mt    n   nt    k   kt\n", "SUP");
+			printf("%5d%5d%5d%5d%5d%5d\n", 
+					(int)m, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_MT, cntx  ),
+					(int)n, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_NT, cntx  ),
+					(int)k, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx  ));
+		}
+
 		// Pass in m and n reversed, which simulates a transposition of the
 		// entire operation pursuant to the microkernel storage preference.
 		if ( !bli_cntx_l3_sup_thresh_is_met( dt, n, m, k, cntx ) )
@@ -81,7 +90,14 @@ err_t bli_gemmsup
 		const dim_t m  = bli_obj_length( c );
 		const dim_t n  = bli_obj_width( c );
 		const dim_t k  = bli_obj_width_after_trans( a );
-
+		if (bli_info_get_enable_diagnosis())
+		{
+			printf("%-3s m   mt    n   nt    k   kt\n", "SUP");
+			printf("%5d%5d%5d%5d%5d%5d\n", 
+					(int)m, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_MT, cntx  ),
+					(int)n, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_NT, cntx  ),
+					(int)k, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx  ));
+		}
 		if ( !bli_cntx_l3_sup_thresh_is_met( dt, m, n, k, cntx ) )
 			return BLIS_FAILURE;
 	}
@@ -90,20 +106,7 @@ err_t bli_gemmsup
 	// that in the case that a runtime is passed in, we make a local copy.
 	rntm_t rntm_l;
 	if ( rntm == NULL ) { bli_rntm_init_from_global( &rntm_l ); }
-	else                { rntm_l = *rntm;                       }
-
-#if 0
-const num_t dt = bli_obj_dt( c );
-const dim_t m  = bli_obj_length( c );
-const dim_t n  = bli_obj_width( c );
-const dim_t k  = bli_obj_width_after_trans( a );
-const dim_t tm = bli_cntx_get_l3_sup_thresh_dt( dt, BLIS_MT, cntx );
-const dim_t tn = bli_cntx_get_l3_sup_thresh_dt( dt, BLIS_NT, cntx );
-const dim_t tk = bli_cntx_get_l3_sup_thresh_dt( dt, BLIS_KT, cntx );
-
-printf( "dims: %d %d %d (threshs: %d %d %d)\n",
-        (int)m, (int)n, (int)k, (int)tm, (int)tn, (int)tk );
-#endif
+	else				{ rntm_l = *rntm;                       }
 
 	// We've now ruled out the following two possibilities:
 	// - the ukernel prefers the operation as-is, and the sup thresholds are
@@ -166,7 +169,14 @@ err_t bli_gemmtsup
 		const num_t dt = bli_obj_dt( c );
 		const dim_t m  = bli_obj_length( c );
 		const dim_t k  = bli_obj_width_after_trans( a );
-
+		if (bli_info_get_enable_diagnosis())
+		{
+			printf("%-3s m   mt    n   nt    k   kt\n", "SUP");
+			printf("%5d%5d%5d%5d%5d%5d\n", 
+					(int)m, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_MT, cntx  ),
+					(int)m, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_NT, cntx  ),
+					(int)k, (int)bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx  ));
+		}
 		if ( !bli_cntx_l3_sup_thresh_is_met( dt, m, m, k, cntx ) )
 			return BLIS_FAILURE;
 	}
@@ -175,7 +185,7 @@ err_t bli_gemmtsup
 	// that in the case that a runtime is passed in, we make a local copy.
 	rntm_t rntm_l;
 	if ( rntm == NULL ) { bli_rntm_init_from_global( &rntm_l ); }
-	else                { rntm_l = *rntm;                       }
+	else				{ rntm_l = *rntm;                       }
 
 	// We've now ruled out the possibility that the sup thresholds are
 	// unsatisfied.

@@ -110,6 +110,9 @@ static void bli_l3_thread_decorator_entry( thrcomm_t* gl_comm, dim_t tid, const 
 	  thread
 	);
 
+    if (tid==0 && bli_info_get_enable_diagnosis()) 
+        bli_thrinfo_print(thread);
+
 	// Free the thread's local control tree.
 	bli_l3_cntl_free( sba_pool, cntl_use );
 

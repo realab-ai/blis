@@ -31,11 +31,20 @@
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-
+// -- level-3 ------------------------------------------------------------------
 GEMM_UKR_PROT( float ,   s, gemm_skx_asm_32x12_l2 )
 GEMM_UKR_PROT( float ,   s, gemm_skx_asm_12x32_l2 )
 
 GEMM_UKR_PROT( double,   d, gemm_skx_asm_16x12_l2 )
 GEMM_UKR_PROT( double,   d, gemm_skx_asm_16x14 )
 
+// gemm_cv
+GEMM_UKR_PROT(     float,   s, gemm_cv_skx_intrin_48x8 )
+GEMM_UKR_PROT(    double,   d, gemm_cv_skx_intrin_24x8 )
+// gemmsup_cv
+GEMMSUP_KER_PROT(  float,   s, gemmsup_cv_skx_intrin_48x8 )
+GEMMSUP_KER_PROT( double,   d, gemmsup_cv_skx_intrin_24x8 )
+// gemmsup_rd
+GEMMSUP_KER_PROT(  float,   s, gemmsup_rd_skx_intrin_48x8 )
+GEMMSUP_KER_PROT( double,   d, gemmsup_rd_skx_intrin_24x8 )
 

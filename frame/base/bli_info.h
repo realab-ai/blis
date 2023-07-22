@@ -80,6 +80,8 @@ BLIS_EXPORT_BLIS gint_t bli_info_get_thread_jrir_tlb( void );
 BLIS_EXPORT_BLIS gint_t bli_info_get_enable_tls( void );
 BLIS_EXPORT_BLIS gint_t bli_info_get_enable_memkind( void );
 BLIS_EXPORT_BLIS gint_t bli_info_get_enable_sandbox( void );
+BLIS_EXPORT_BLIS gint_t bli_info_get_enable_fip( void );
+BLIS_EXPORT_BLIS gint_t bli_info_get_enable_diagnosis( void );
 
 
 // -- Kernel implementation-related --------------------------------------------

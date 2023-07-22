@@ -56,8 +56,8 @@ void bli_gemm_front
 #ifdef BLIS_ENABLE_SMALL_MATRIX
 	// Only handle small problems separately for homogeneous datatypes.
 	if ( bli_obj_dt( a ) == bli_obj_dt( b ) &&
-	     bli_obj_dt( a ) == bli_obj_dt( c ) &&
-	     bli_obj_comp_prec( c ) == bli_obj_prec( c ) )
+		 bli_obj_dt( a ) == bli_obj_dt( c ) &&
+		 bli_obj_comp_prec( c ) == bli_obj_prec( c ) )
 	{
 		err_t status = bli_gemm_small( alpha, a, b, beta, c, cntx, cntl );
 		if ( status == BLIS_SUCCESS ) return;
@@ -105,8 +105,8 @@ void bli_gemm_front
 	// storage dt of C (instead of the computation precision against the
 	// storage precision of C).
 	if ( bli_obj_dt( &c_local ) != bli_obj_dt( &a_local ) ||
-	     bli_obj_dt( &c_local ) != bli_obj_dt( &b_local ) ||
-	     bli_obj_comp_prec( &c_local ) != bli_obj_prec( &c_local ) )
+		 bli_obj_dt( &c_local ) != bli_obj_dt( &b_local ) ||
+		 bli_obj_comp_prec( &c_local ) != bli_obj_prec( &c_local ) )
 	{
 		// Handle mixed datatype cases in bli_gemm_md(), which may modify
 		// the objects or the context. (If the context is modified, cntx
@@ -245,6 +245,11 @@ void bli_gemm_front
 	  cntx,
 	  rntm
 	);
+
+	if (bli_info_get_enable_diagnosis())
+	{
+		bli_rntm_print(rntm);
+	}
 
 #ifdef BLIS_ENABLE_GEMM_MD
 #ifdef BLIS_ENABLE_GEMM_MD_EXTRA_MEM
