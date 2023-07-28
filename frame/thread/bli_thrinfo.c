@@ -270,17 +270,17 @@ void bli_thrinfo_print_sub
 	        ( unsigned long )bli_thrinfo_work_id( thread ),
 	        ( unsigned long )bli_thrinfo_needs_free_comm( thread ));
 
-	thrinfo_t * sub_prenode = bli_thrinfo_sub_prenode( thread  );
-	thrinfo_t * sub_node = bli_thrinfo_sub_node( thread   );
-	if (sub_prenode != NULL)
-	{
-		printf("P");
-		bli_thrinfo_print_sub(sub_prenode, level+1);
-	}
-	if (sub_node != NULL)
-	{
-		printf(" ");
-		bli_thrinfo_print_sub(sub_node, level+1 );
-	}
+    thrinfo_t * sub_prenode = bli_thrinfo_sub_prenode( thread  );
+    thrinfo_t * sub_node = bli_thrinfo_sub_node( thread   );
+    if (sub_prenode != NULL)
+    {
+        printf("P");
+        bli_thrinfo_print_sub(sub_prenode, level+1);
+    }
+    if (sub_node != NULL)
+    {
+        printf(" ");
+	    bli_thrinfo_print_sub(sub_node, level+1 );
+    }
 }
 

@@ -516,34 +516,16 @@ typedef const char * SsePrefetchPtrType;
 // --------------------------------------------------------------------
 #define div_up(a, b) ((a-1)/(b)+1)
 
-#define m_powedges_8d(MR, x, EdgeFunc, ...) \
+#define m_powedges(MR, x, EdgeFunc, ...) \
 { \
 	int x_i = x; \
-	if (MR < x_i) { \
+	if ( MR < x_i) { \
 		for (; x_i > MR; x_i-= MR) { \
 			EdgeFunc(MR, __VA_ARGS__); \
 		} \
 	} \
-	if (MR==x_i) { \
-		EdgeFunc(MR, __VA_ARGS__); \
-	} \
-	else { \
-		if (16 <= MR && x_i&16) EdgeFunc(16, __VA_ARGS__); \
-		if ( 8 <= MR && x_i& 8) EdgeFunc( 8, __VA_ARGS__); \
-		if ( 4 <= MR && x_i& 4) EdgeFunc( 4, __VA_ARGS__); \
-		if ( 2 <= MR && x_i& 2) EdgeFunc( 2, __VA_ARGS__); \
-		if ( 1 <= MR && x_i& 1) EdgeFunc( 1, __VA_ARGS__); \
-	}\
-}
-#define m_powedges_16f(MR, x, EdgeFunc, ...) \
-{ \
-	int x_i = x; \
-	if (MR < x_i) { \
-		for (; x_i > MR; x_i-=MR) { \
-			EdgeFunc(MR, __VA_ARGS__); \
-		} \
-	} \
-	if (MR==x_i) { \
+	\
+	if ( MR == x_i ) { \
 		EdgeFunc(MR, __VA_ARGS__); \
 	} \
 	else { \
@@ -555,32 +537,16 @@ typedef const char * SsePrefetchPtrType;
 		if ( 1 <= MR && x_i& 1) EdgeFunc( 1, __VA_ARGS__); \
 	}\
 }
-#define n_powedges_8d(NR, x, EdgeFunc, ...) \
+#define n_powedges(NR, x, EdgeFunc, ...) \
 { \
 	int x_i = x; \
-	if (NR < x_i) { \
+	if ( NR < x_i ) { \
 		for (; x_i > NR; x_i-=NR) { \
 			EdgeFunc(NR, __VA_ARGS__); \
 		} \
 	} \
-	if (NR==x_i) { \
-		EdgeFunc(NR, __VA_ARGS__); \
-	} \
-	else { \
-		if ( 4 <= NR && x_i& 4) EdgeFunc( 4, __VA_ARGS__); \
-		if ( 2 <= NR && x_i& 2) EdgeFunc( 2, __VA_ARGS__); \
-		if ( 1 <= NR && x_i& 1) EdgeFunc( 1, __VA_ARGS__); \
-	}\
-}
-#define n_powedges_16f(NR, x, EdgeFunc, ...) \
-{ \
-	int x_i = x; \
-	if (NR < x_i) { \
-		for (; x_i > NR; x_i-=NR) { \
-			EdgeFunc(NR, __VA_ARGS__); \
-		} \
-	} \
-	if (NR==x_i) { \
+	\
+	if ( NR==x_i ) { \
 		EdgeFunc(NR, __VA_ARGS__); \
 	} \
 	else { \

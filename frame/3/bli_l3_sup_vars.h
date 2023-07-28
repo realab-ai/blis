@@ -172,12 +172,12 @@ BLIS_INLINE void bli_gemmsup_ref_var1n2m_opt_cases
 	}
 	else
 	{
-		if (packa || packb)
-		{
-			//bli_check_error_code( BLIS_NOT_YET_IMPLEMENTED );
-			printf( "libblis: sup var1n2m_opt_cases not yet implemented for column-preferential kernels.\n" );
-			bli_abort();
-		}
-	}
+        if (packa || packb)
+        {
+    		//bli_check_error_code( BLIS_NOT_YET_IMPLEMENTED );
+	    	printf( "libblis: sup var1n2m_opt_cases not yet implemented for column-preferential kernels.\n" );
+		    bli_abort();
+	    }
+    }
 }
 

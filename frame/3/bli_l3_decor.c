@@ -90,8 +90,8 @@ static void bli_l3_thread_decorator_entry( thrcomm_t* gl_comm, dim_t tid, const 
 	// Create a default control tree for the operation, if needed.
 	cntl_t* cntl_use;
 	pool_t* sba_pool = bli_apool_array_elem( tid, array );
-	bli_l3_cntl_create_if( family, schema_a, schema_b,
-	                       &a_t, &b_t, &c_t, sba_pool, NULL, &cntl_use );
+	bli_l3_cntl_create_if( family, schema_a, schema_b, 
+			               &a_t, &b_t, &c_t, sba_pool, NULL, &cntl_use );
 
 	// Create the root node of the current thread's thrinfo_t structure.
 	// The root node is the *parent* of the node corresponding to the first
@@ -110,8 +110,8 @@ static void bli_l3_thread_decorator_entry( thrcomm_t* gl_comm, dim_t tid, const 
 	  thread
 	);
 
-    if (tid==0 && bli_info_get_enable_diagnosis()) 
-        bli_thrinfo_print(thread);
+	if (tid==0 && bli_info_get_enable_diagnosis()) 
+		bli_thrinfo_print(thread);
 
 	// Free the thread's local control tree.
 	bli_l3_cntl_free( sba_pool, cntl_use );
@@ -135,37 +135,22 @@ void bli_l3_thread_decorator
        const obj_t*   beta,
        const obj_t*   c,
        const cntx_t*  cntx,
-       const rntm_t*  rntm
+             rntm_t*  rntm
      )
 {
-	rntm_t rntm_l = *rntm;
-
 	// Query the threading implementation and the number of threads requested.
-	timpl_t ti = bli_rntm_thread_impl( &rntm_l );
-	dim_t   nt = bli_rntm_num_threads( &rntm_l );
+	timpl_t ti = bli_rntm_thread_impl( rntm );
+	dim_t   nt = bli_rntm_num_threads( rntm );
 
-#if 0
-	printf( "(pre-opt) application requested rntm.thread_impl = %s\n",
-	        ( ti == BLIS_SINGLE ? "single" :
-	        ( ti == BLIS_OPENMP ? "openmp" : "pthreads" ) ) );
-#endif
-
-	if ( bli_error_checking_is_enabled() )
-		bli_l3_thread_decorator_check( &rntm_l );
-
-#ifdef BLIS_ENABLE_NT1_VIA_SINGLE
-	if ( nt == 1 )
+	if ( nt == 1 && BLIS_SINGLE != ti )
 	{
 		// An optimization. If the caller requests only one thread, force
 		// the sequential level-3 thread decorator even if that means
 		// overriding the caller's preferred threading implementation (as
 		// communicated via the rntm_t).
-		rntm_l = *rntm;
 		ti = BLIS_SINGLE;
-		bli_rntm_set_thread_impl( BLIS_SINGLE, &rntm_l );
-		rntm = &rntm_l;
+		bli_rntm_set_thread_impl( BLIS_SINGLE, rntm );
 	}
-#endif
 
 	if ( 1 < nt && ti == BLIS_SINGLE )
 	{
@@ -175,15 +160,12 @@ void bli_l3_thread_decorator
 		// implementation over the number of threads, and so reset all
 		// parallelism parameters to 1.
 		nt = 1;
-		bli_rntm_set_ways_only( 1, 1, 1, 1, 1, &rntm_l );
-		bli_rntm_set_num_threads_only( 1, &rntm_l );
+		bli_rntm_set_ways_only( 1, 1, 1, 1, 1, rntm );
+		bli_rntm_set_num_threads_only( 1, rntm );
 	}
 
-#if 0
-	printf( "(post-opt) moving forward with rntm.thread_impl  = %s\n",
-	        ( ti == BLIS_SINGLE ? "single" :
-	        ( ti == BLIS_OPENMP ? "openmp" : "pthreads" ) ) );
-#endif
+	if ( bli_error_checking_is_enabled() )
+		bli_l3_thread_decorator_check( rntm );
 
 	// Check out an array_t from the small block allocator. This is done
 	// with an internal lock to ensure only one application thread accesses
@@ -200,7 +182,7 @@ void bli_l3_thread_decorator
 	params.beta     = beta;
 	params.c        = c;
 	params.cntx     = cntx;
-	params.rntm     = &rntm_l;
+	params.rntm     = rntm;
 	params.array    = array;
 
 	// Launch the threads using the threading implementation specified by ti,

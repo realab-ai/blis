@@ -65,11 +65,31 @@ void bli_gemmt_front
 	bli_obj_reset_origin( &b_local );
 	bli_obj_reset_origin( &c_local );
 
-	// An optimization: If C is stored by rows and the micro-kernel prefers
-	// contiguous columns, or if C is stored by columns and the micro-kernel
-	// prefers contiguous rows, transpose the entire operation to allow the
-	// micro-kernel to access elements of C in its preferred manner.
-	if ( bli_cntx_dislikes_storage_of( &c_local, BLIS_GEMM_VIR_UKR, cntx ) )
+	const num_t dt                = bli_obj_dt( &c_local  );
+	const dim_t m                 = bli_obj_length_after_trans( &c_local  );
+	const dim_t n                 = bli_obj_width_after_trans( &c_local  );
+	const dim_t k                 = bli_obj_width_after_trans( &a_local  );
+	const stor3_t stor_id         = bli_obj_stor3_from_strides( &c_local, &a_local, &b_local  );
+	const bool is_rrr_rrc_rcr_crr = ( stor_id == BLIS_RRR ||
+			                          stor_id == BLIS_RRC ||
+									  stor_id == BLIS_RCR ||
+									  stor_id == BLIS_CRR );
+	bool is_primary               = true;
+
+	if ( bli_cntx_l3_sup_thresh_is_met( dt, m, n, k, cntx  ) &&
+		 bli_info_get_enable_fip() )
+	{
+		is_primary = ( is_rrr_rrc_rcr_crr == bli_cntx_ukr_prefers_rows_dt( dt, bli_stor3_ukr( stor_id  ), cntx  )  );
+	}
+	else
+	{
+		// An optimization: If C is stored by rows and the micro-kernel prefers
+		// contiguous columns, or if C is stored by columns and the micro-kernel
+		// prefers contiguous rows, transpose the entire operation to allow the
+		// micro-kernel to access elements of C in its preferred manner.
+		is_primary = !bli_cntx_dislikes_storage_of( &c_local, BLIS_GEMM_VIR_UKR, cntx );
+	}
+	if ( !is_primary )
 	{
 		bli_obj_swap( &a_local, &b_local );
 
@@ -79,7 +99,7 @@ void bli_gemmt_front
 	}
 
 	// Set the pack schemas within the objects, as appropriate.
-	bli_l3_set_schemas( &a_local, &b_local, &c_local, cntx );
+	bli_l3_set_schemas( BLIS_GEMMT, &a_local, &b_local, &c_local, cntx );
 
 	// Parse and interpret the contents of the rntm_t object to properly
 	// set the ways of parallelism for each loop, and then make any

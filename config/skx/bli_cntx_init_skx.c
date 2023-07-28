@@ -9,14 +9,14 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are
    met:
-     - Redistributions of source code must retain the above copyright
+    - Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
     - Redistributions in binary form must reproduce the above copyright
       notice, this list of conditions and the following disclaimer in the
       documentation and/or other materials provided with the distribution.
     - Neither the name(s) of the copyright holder(s) nor the names of its
-	 contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
+     contributors may be used to endorse or promote products derived
+     from this software without specific prior written permission.
 
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -36,16 +36,16 @@
 
 void bli_cntx_init_skx( cntx_t* cntx )
 {
-    blksz_t blkszs[ BLIS_NUM_BLKSZS ];
+	blksz_t blkszs[ BLIS_NUM_BLKSZS ];
 
-    // Set default kernel blocksizes and functions.
-    bli_cntx_init_skx_ref( cntx );
+	// Set default kernel blocksizes and functions.
+	bli_cntx_init_skx_ref( cntx );
 
-    // -------------------------------------------------------------------------
+	// -------------------------------------------------------------------------
 
-    // Update the context with optimized native gemm micro-kernels.
-    bli_cntx_set_ukrs
-    (
+	// Update the context with optimized native gemm micro-kernels.
+	bli_cntx_set_ukrs
+	(
 	 cntx,
 	 
 	 // level-3
@@ -111,11 +111,11 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	 BLIS_GEMMSUP_CCC_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
 
 	 BLIS_VA_END
-    );
+	);
 
-    // Update the context with storage preferences.
-    bli_cntx_set_ukr_prefs
-    (
+	// Update the context with storage preferences.
+	bli_cntx_set_ukr_prefs
+	(
 	 cntx,
 
 	 // level-3
@@ -142,40 +142,40 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	 BLIS_GEMMSUP_CCC_UKR_ROW_PREF, BLIS_FLOAT, FALSE,
 
 	 BLIS_VA_END
-    );
+	);
 
-    // Initialize level-3 blocksize objects with architecture-specific values.
-    //                                              s      d      c      z
-    bli_blksz_init_easy( &blkszs[ BLIS_MR ],       48,    24,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_NR ],        8,     8,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_MC ],      432,   240,    -1,    -1 );
-    bli_blksz_init     ( &blkszs[ BLIS_KC ],      336,   256,    -1,    -1,
+	// Initialize level-3 blocksize objects with architecture-specific values.
+	//                                              s      d      c      z
+	bli_blksz_init_easy( &blkszs[ BLIS_MR ],       48,    24,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NR ],        8,     8,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],      432,   240,    -1,    -1 );
+	bli_blksz_init     ( &blkszs[ BLIS_KC ],      336,   256,    -1,    -1,
 	                                              432,   320,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_NC ],     3072,  3072,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_AF ],        8,     8,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_DF ],        8,     8,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NC ],     3072,  3072,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_AF ],        8,     8,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_DF ],        8,     8,    -1,    -1 );
 
-    // Initialize sup thresholds with architecture-appropriate values.
-    //                                              s      d      c      z
-    bli_blksz_init_easy( &blkszs[ BLIS_MT ],      257,   201,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_NT ],      257,   201,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_KT ],      257,   201,    -1,    -1 );
+	// Initialize sup thresholds with architecture-appropriate values.
+	//                                              s      d      c      z
+	bli_blksz_init_easy( &blkszs[ BLIS_MT ],      432,   216,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NT ],      432,   216,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KT ],      432,   216,    -1,    -1 );
 
-    // Initialize level-3 sup blocksize objects with architecture-specific
-    // values.
-    //                                              s      d      c      z
-    bli_blksz_init     ( &blkszs[ BLIS_MR_SUP ],   48,    24,    -1,    -1,
+	// Initialize level-3 sup blocksize objects with architecture-specific
+	// values.
+	//                                              s      d      c      z
+	bli_blksz_init     ( &blkszs[ BLIS_MR_SUP ],   48,    24,    -1,    -1,
 	                                               48,    24,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_NR_SUP ],    8,     8,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_MC_SUP ],  432,   240,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_KC_SUP ],  432,   320,    -1,    -1 );
-    bli_blksz_init_easy( &blkszs[ BLIS_NC_SUP ], 3072,  3072,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NR_SUP ],    8,     8,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC_SUP ],  432,   240,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC_SUP ],  336,   320,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NC_SUP ], 3072,  3072,    -1,    -1 );
 
 
-    // Update the context with the current architecture's register and cache
-    // blocksizes (and multiples) for native execution.
-    bli_cntx_set_blkszs
-    (
+	// Update the context with the current architecture's register and cache
+	// blocksizes (and multiples) for native execution.
+	bli_cntx_set_blkszs
+	(
 	 cntx,
 
 	 // level-3
@@ -202,6 +202,6 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	 BLIS_MR_SUP, &blkszs[ BLIS_MR_SUP ], BLIS_MR_SUP,
 
 	 BLIS_VA_END
-    );
+	);
 }
 

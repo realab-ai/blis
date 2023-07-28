@@ -134,7 +134,7 @@ void bli_hemm_front
 #endif
 
 	// Set the pack schemas within the objects.
-	bli_l3_set_schemas( &a_local, &b_local, &c_local, cntx );
+	bli_l3_set_schemas( BLIS_HEMM, &a_local, &b_local, &c_local, cntx );
 
 	// Parse and interpret the contents of the rntm_t object to properly
 	// set the ways of parallelism for each loop, and then make any

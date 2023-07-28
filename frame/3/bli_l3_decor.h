@@ -60,7 +60,7 @@ void bli_l3_thread_decorator
        const obj_t*   beta,
        const obj_t*   c,
        const cntx_t*  cntx,
-       const rntm_t*  rntm
+             rntm_t*  rntm
      );
 
 void bli_l3_thread_decorator_check

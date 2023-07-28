@@ -59,7 +59,7 @@ cntl_t* bli_gemmbp_cntl_create
      )
 {
 	void_fp macro_kernel_fp;
-
+	cntl_t* post_node;
 	// Choose the default macrokernel based on the operation family...
 	if      ( family == BLIS_GEMM )  macro_kernel_fp = bli_gemm_ker_var2;
 	else if ( family == BLIS_GEMMT ) macro_kernel_fp =
@@ -89,6 +89,7 @@ cntl_t* bli_gemmbp_cntl_create
 	  NULL,         // variant function pointer not used
 	  NULL          // no sub-node; this is the leaf of the tree.
 	);
+	post_node = gemm_cntl_bu_ke;
 
 	cntl_t* gemm_cntl_bp_bu = bli_gemm_cntl_create_node
 	(
@@ -96,70 +97,91 @@ cntl_t* bli_gemmbp_cntl_create
 	  family,
 	  BLIS_NR,
 	  macro_kernel_fp,
-	  gemm_cntl_bu_ke
+	  post_node
 	);
+	post_node = gemm_cntl_bp_bu;
 
-	// Create a node for packing matrix A.
-	cntl_t* gemm_cntl_packa = bli_packm_cntl_create_node
-	(
-	  pool,
-	  bli_l3_packa, // pack the left-hand operand
-	  BLIS_MR,
-	  BLIS_KR,
-	  FALSE,        // do NOT invert diagonal
-	  FALSE,        // reverse iteration if upper?
-	  FALSE,        // reverse iteration if lower?
-	  schema_a,     // normally BLIS_PACKED_ROW_PANELS
-	  BLIS_BUFFER_FOR_A_BLOCK,
-	  gemm_cntl_bp_bu
-	);
+	if ( schema_a != BLIS_NOT_PACKED )
+	{
+		// Create a node for packing matrix A.
+		cntl_t* gemm_cntl_packa = bli_packm_cntl_create_node
+		(
+		  pool,
+		  bli_l3_packa, // pack the left-hand operand
+		  BLIS_MR,
+		  BLIS_KR,
+		  FALSE,        // do NOT invert diagonal
+		  FALSE,        // reverse iteration if upper?
+		  FALSE,        // reverse iteration if lower?
+		  schema_a,     // normally BLIS_PACKED_ROW_PANELS
+		  BLIS_BUFFER_FOR_A_BLOCK,
+		  post_node
+		);
+		post_node = gemm_cntl_packa;
+	}
 
 	// Create a node for partitioning the m dimension by MC.
-	cntl_t* gemm_cntl_op_bp = bli_gemm_cntl_create_node
-	(
-	  pool,
-	  family,
-	  BLIS_MC,
-	  bli_gemm_blk_var1,
-	  gemm_cntl_packa
-	);
+	if ( schema_b != BLIS_NOT_PACKED )
+	{
+		cntl_t* gemm_cntl_op_bp = bli_gemm_cntl_create_node
+		(
+		  pool,
+		  family,
+		  BLIS_MC,
+		  bli_gemm_blk_var1,
+		  post_node
+		);
+		post_node = gemm_cntl_op_bp;
+	}
 
-	// Create a node for packing matrix B.
-	cntl_t* gemm_cntl_packb = bli_packm_cntl_create_node
-	(
-	  pool,
-	  bli_l3_packb, // pack the right-hand operand
-	  BLIS_NR,
-	  BLIS_KR,
-	  FALSE,        // do NOT invert diagonal
-	  FALSE,        // reverse iteration if upper?
-	  FALSE,        // reverse iteration if lower?
-	  schema_b,     // normally BLIS_PACKED_COL_PANELS
-	  BLIS_BUFFER_FOR_B_PANEL,
-	  gemm_cntl_op_bp
-	);
+	if ( schema_b != BLIS_NOT_PACKED )
+	{
+		// Create a node for packing matrix B.
+		cntl_t* gemm_cntl_packb = bli_packm_cntl_create_node
+		(
+		  pool,
+		  bli_l3_packb, // pack the right-hand operand
+		  BLIS_NR,
+		  BLIS_KR,
+		  FALSE,        // do NOT invert diagonal
+		  FALSE,        // reverse iteration if upper?
+		  FALSE,        // reverse iteration if lower?
+		  schema_b,     // normally BLIS_PACKED_COL_PANELS
+		  BLIS_BUFFER_FOR_B_PANEL,
+		  post_node
+		);
+		post_node = gemm_cntl_packb;
+	}
 
-	// Create a node for partitioning the k dimension by KC.
-	cntl_t* gemm_cntl_mm_op = bli_gemm_cntl_create_node
-	(
-	  pool,
-	  family,
-	  BLIS_KC,
-	  bli_gemm_blk_var3,
-	  gemm_cntl_packb
-	);
+	if ( schema_a != BLIS_NOT_PACKED || schema_b != BLIS_NOT_PACKED )
+	{
+		// Create a node for partitioning the k dimension by KC.
+		cntl_t* gemm_cntl_mm_op = bli_gemm_cntl_create_node
+		(
+		  pool,
+		  family,
+		  BLIS_KC,
+		  bli_gemm_blk_var3,
+		  post_node
+		);
+		post_node = gemm_cntl_mm_op;
+	}
 
-	// Create a node for partitioning the n dimension by NC.
-	cntl_t* gemm_cntl_vl_mm = bli_gemm_cntl_create_node
-	(
-	  pool,
-	  family,
-	  BLIS_NC,
-	  bli_gemm_blk_var2,
-	  gemm_cntl_mm_op
-	);
+	if ( schema_a != BLIS_NOT_PACKED )
+	{
+		// Create a node for partitioning the n dimension by NC.
+		cntl_t* gemm_cntl_vl_mm = bli_gemm_cntl_create_node
+		(
+		  pool,
+		  family,
+		  BLIS_NC,
+		  bli_gemm_blk_var2,
+		  post_node
+		);
+		post_node = gemm_cntl_vl_mm;
+	}
 
-	return gemm_cntl_vl_mm;
+	return post_node;
 }
 
 // -----------------------------------------------------------------------------

@@ -96,24 +96,32 @@ void bli_gemmt_u_ker_var2
 
 	const pack_t schema_a  = bli_obj_pack_schema( a );
 	const pack_t schema_b  = bli_obj_pack_schema( b );
-
-	      dim_t  m         = bli_obj_length( c );
-	      dim_t  n         = bli_obj_width( c );
-	      dim_t  k         = bli_obj_width( a );
+	const bool   packed_ab = ( schema_a!=BLIS_NOT_PACKED && schema_b!=BLIS_NOT_PACKED );
+	      dim_t  m         = bli_obj_length_after_trans( c );
+	      dim_t  n         = bli_obj_width_after_trans( c );
+	      dim_t  k         = bli_obj_width_after_trans( a );
 
 	const void*  buf_a     = bli_obj_buffer_at_off( a );
+	const dim_t  rs_a      = bli_obj_has_notrans( a  ) ? bli_obj_row_stride( a  ) : bli_obj_col_stride( a  );
+	const dim_t  cs_a      = bli_obj_has_notrans( a  ) ? bli_obj_col_stride( a  ) : bli_obj_row_stride( a  );
 	const inc_t  is_a      = bli_obj_imag_stride( a );
 	const dim_t  pd_a      = bli_obj_panel_dim( a );
 	const inc_t  ps_a      = bli_obj_panel_stride( a );
+		  conj_t conja     = bli_obj_conj_status( a );
 
 	const void*  buf_b     = bli_obj_buffer_at_off( b );
+	const dim_t  rs_b      = bli_obj_has_notrans( b  ) ? bli_obj_row_stride( b  ) : bli_obj_col_stride( b  );
+	const dim_t  cs_b      = bli_obj_has_notrans( b  ) ? bli_obj_col_stride( b  ) : bli_obj_row_stride( b  );
 	const inc_t  is_b      = bli_obj_imag_stride( b );
 	const dim_t  pd_b      = bli_obj_panel_dim( b );
 	const inc_t  ps_b      = bli_obj_panel_stride( b );
+		    conj_t conjb   = bli_obj_conj_status( b  );
 
 	      void*  buf_c     = bli_obj_buffer_at_off( c );
 	const inc_t  rs_c      = bli_obj_row_stride( c );
 	const inc_t  cs_c      = bli_obj_col_stride( c );
+
+	const stor3_t stor_id  = bli_obj_stor3_from_strides( c, a, b  );
 
 	// Detach and multiply the scalars attached to A and B.
 	obj_t scalar_a, scalar_b;
@@ -136,6 +144,7 @@ void bli_gemmt_u_ker_var2
 	// Query the context for the micro-kernel address and cast it to its
 	// function pointer type.
 	gemm_ukr_ft     gemm_ukr        = bli_cntx_get_l3_vir_ukr_dt( dt_exec, BLIS_GEMM_UKR, cntx );
+	gemmsup_ker_ft  gemmsup_ukr     = bli_cntx_get_l3_sup_ker_dt( dt_exec, stor_id, cntx );
 	xpbys_mxn_u_vft xpbys_mxn_u_ukr = xpbys_mxn_u[ dt_exec ];
 
 	// Temporary C buffer for edge cases. Note that the strides of this
@@ -303,20 +312,41 @@ void bli_gemmt_u_ker_var2
 				bli_auxinfo_set_next_a( a2, &aux );
 				bli_auxinfo_set_next_b( b2, &aux );
 
-				// Invoke the gemm micro-kernel.
-				gemm_ukr
-				(
-				  MR,
-				  NR,
-				  k,
-				  ( void* )alpha_cast,
-				  ( void* )a1,
-				  ( void* )b1,
-				  ( void* )zero,
-				  ct, rs_ct, cs_ct,
-				  &aux,
-				  ( cntx_t* )cntx
-				);
+				if ( packed_ab )
+				{
+					// Invoke the gemm micro-kernel.
+					gemm_ukr
+					(
+					  MR,
+					  NR,
+					  k,
+					  ( void* )alpha_cast,
+					  ( void* )a1,
+					  ( void* )b1,
+					  ( void* )zero,
+					  ct, rs_ct, cs_ct,
+					  &aux,
+					  ( cntx_t* )cntx
+					);
+				}
+				else
+				{
+					// Invoke the gemmsup micro-kernel.
+					gemmsup_ukr
+					(
+					  conja, conjb,
+					  MR,
+					  NR,
+					  k,
+					  ( void* )alpha_cast,
+					  ( void* )a1, rs_a, cs_a,
+					  ( void* )b1, rs_b, cs_b,
+					  ( void* )zero,
+					  ct, rs_ct, cs_ct,
+					  &aux,
+					  ( cntx_t* )cntx
+					);
+				}
 
 				// Scale C and add the result to only the stored part.
 				xpbys_mxn_u_ukr
@@ -341,20 +371,41 @@ void bli_gemmt_u_ker_var2
 				bli_auxinfo_set_next_a( a2, &aux );
 				bli_auxinfo_set_next_b( b2, &aux );
 
-				// Invoke the gemm micro-kernel.
-				gemm_ukr
-				(
-				  m_cur,
-				  n_cur,
-				  k,
-				  ( void* )alpha_cast,
-				  ( void* )a1,
-				  ( void* )b1,
-				  ( void* )beta_cast,
-				  c11, rs_c, cs_c,
-				  &aux,
-				  ( cntx_t* )cntx
-				);
+				if ( packed_ab )
+				{
+					// Invoke the gemm micro-kernel.
+					gemm_ukr
+					(
+					  m_cur,
+					  n_cur,
+					  k,
+					  ( void* )alpha_cast,
+					  ( void* )a1,
+					  ( void* )b1,
+					  ( void* )beta_cast,
+					  c11, rs_c, cs_c,
+					  &aux,
+					  ( cntx_t* )cntx
+					);
+				}
+				else
+				{
+					// Invoke the gemmsup micro-kernel.
+					gemmsup_ukr
+					(
+					  conja, conjb,
+					  m_cur,
+					  n_cur,
+					  k,
+					  ( void* )alpha_cast,
+					  ( void* )a1, rs_a, cs_a,
+					  ( void* )b1, rs_b, cs_b,
+					  ( void* )beta_cast,
+					  c11, rs_c, cs_c,
+					  &aux,
+					  ( cntx_t* )cntx
+					);
+				}
 			}
 		}
 	}

@@ -34,6 +34,7 @@
 
 void bli_l3_set_schemas
      (
+	         opid_t  family,
              obj_t*  a,
              obj_t*  b,
        const obj_t*  c,

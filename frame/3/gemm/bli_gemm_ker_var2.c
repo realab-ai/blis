@@ -90,24 +90,32 @@ void bli_gemm_ker_var2
 
 	const pack_t schema_a  = bli_obj_pack_schema( a );
 	const pack_t schema_b  = bli_obj_pack_schema( b );
-
-	      dim_t  m         = bli_obj_length( c );
-	      dim_t  n         = bli_obj_width( c );
-	      dim_t  k         = bli_obj_width( a );
+	const bool   packed_ab = ( schema_a!=BLIS_NOT_PACKED && schema_b!=BLIS_NOT_PACKED );
+	      dim_t  m         = bli_obj_length_after_trans( c );
+	      dim_t  n         = bli_obj_width_after_trans( c );
+	      dim_t  k         = bli_obj_width_after_trans( a );
 
 	const char*  a_cast    = bli_obj_buffer_at_off( a );
+	const dim_t  rs_a      = bli_obj_has_notrans( a ) ? bli_obj_row_stride( a ) : bli_obj_col_stride( a );
+	const dim_t  cs_a      = bli_obj_has_notrans( a ) ? bli_obj_col_stride( a ) : bli_obj_row_stride( a );
 	const inc_t  is_a      = bli_obj_imag_stride( a );
 	      dim_t  pd_a      = bli_obj_panel_dim( a );
 	      inc_t  ps_a      = bli_obj_panel_stride( a );
+		  conj_t conja     = bli_obj_conj_status( a );
 
 	const char*  b_cast    = bli_obj_buffer_at_off( b );
+	const dim_t  rs_b      = bli_obj_has_notrans( b ) ? bli_obj_row_stride( b ) : bli_obj_col_stride( b );
+	const dim_t  cs_b      = bli_obj_has_notrans( b ) ? bli_obj_col_stride( b ) : bli_obj_row_stride( b );
 	const inc_t  is_b      = bli_obj_imag_stride( b );
 	      dim_t  pd_b      = bli_obj_panel_dim( b );
 	      inc_t  ps_b      = bli_obj_panel_stride( b );
+		  conj_t conjb   = bli_obj_conj_status( b );
 
 	      char*  c_cast    = bli_obj_buffer_at_off( c );
 	      inc_t  rs_c      = bli_obj_row_stride( c );
 	      inc_t  cs_c      = bli_obj_col_stride( c );
+
+	const stor3_t stor_id  = bli_obj_stor3_from_strides( c, a, b );
 
 	// If any dimension is zero, return immediately.
 	if ( bli_zero_dim3( m, n, k ) ) return;
@@ -179,15 +187,20 @@ void bli_gemm_ker_var2
 
 	// Query the context for the micro-kernel address and cast it to its
 	// function pointer type.
-	gemm_ukr_ft gemm_ukr = bli_cntx_get_l3_vir_ukr_dt( dt_exec, BLIS_GEMM_UKR, cntx );
+	gemm_ukr_ft    gemm_ukr    = bli_cntx_get_l3_vir_ukr_dt( dt_exec, BLIS_GEMM_UKR, cntx );
+	gemmsup_ker_ft gemmsup_ukr = bli_cntx_get_l3_sup_ker_dt( dt_exec, stor_id, cntx );
 
 	// Query the params field from the obj_t. If it is non-NULL, grab the ukr
 	// field of the params struct. If that function pointer is non-NULL, use it
 	// as our microkernel instead of the default microkernel queried from the
 	// cntx above.
 	const gemm_ker_params_t* params = bli_obj_ker_params( c );
-	gemm_ukr_ft user_ukr = params ? params->ukr : NULL;
-	if ( user_ukr ) gemm_ukr = user_ukr;
+	void_fp user_ukr = params ? params->ukr : NULL;
+	if ( user_ukr ) 
+	{
+		gemm_ukr    = ( gemm_ukr_ft    ) user_ukr;
+		gemmsup_ukr = ( gemmsup_ker_ft ) user_ukr; 
+	}
 
 	// Temporary C buffer for edge cases. Note that the strides of this
 	// temporary buffer are set so that they match the storage of the
@@ -201,7 +214,7 @@ void bli_gemm_ker_var2
 	const char* zero        = bli_obj_buffer_for_const( dt_exec, &BLIS_ZERO );
 
 	//
-	// Assumptions/assertions:
+	// Assumptions/assertions for Packed A and Packed B:
 	//   rs_a == 1
 	//   cs_a == PACKMR
 	//   pd_a == MR
@@ -241,7 +254,7 @@ void bli_gemm_ker_var2
 	bli_auxinfo_set_is_b( is_b, &aux );
 
 	// Save the virtual microkernel address and the params.
-	bli_auxinfo_set_ukr( gemm_ukr, &aux );
+	bli_auxinfo_set_ukr( (packed_ab)? ( void_fp )gemm_ukr : ( void_fp )gemmsup_ukr, &aux );
 	bli_auxinfo_set_params( params, &aux );
 
 	dim_t jr_start, jr_end, jr_inc;
@@ -346,20 +359,41 @@ void bli_gemm_ker_var2
 			// during the 1m method or some cases of mixed datatypes.
 			if ( dt_exec == dt_c )
 			{
-				// Invoke the gemm micro-kernel.
-				gemm_ukr
-				(
-				  m_cur,
-				  n_cur,
-				  k,
-				  ( void* )alpha_cast,
-				  ( void* )a1,
-				  ( void* )b1,
-				  ( void* )beta_cast,
-				           c11, rs_c, cs_c,
-				  &aux,
-				  ( cntx_t* )cntx
-				);
+				if ( packed_ab )
+				{
+					// Invoke the gemm micro-kernel.
+					gemm_ukr
+					(
+					  m_cur,
+					  n_cur,
+					  k,
+					  ( void* )alpha_cast,
+					  ( void* )a1,
+					  ( void* )b1,
+					  ( void* )beta_cast,
+					           c11, rs_c, cs_c,
+					  &aux,
+					  ( cntx_t* )cntx
+					);
+				}
+				else
+				{
+					// Invoke the gemmsup micro-kernel.
+					gemmsup_ukr
+					(
+					  conja, conjb,
+					  m_cur,
+					  n_cur,
+					  k,
+					  ( void* )alpha_cast,
+					  ( void* )a1,  rs_a, cs_a,
+					  ( void* )b1,  rs_b, cs_b,
+					  ( void* )beta_cast,
+					           c11, rs_c, cs_c,
+					  &aux,
+					  ( cntx_t* )cntx
+					);
+				}
 			}
 			else
 			{

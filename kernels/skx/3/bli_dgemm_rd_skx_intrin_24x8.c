@@ -134,7 +134,7 @@
 
 #define EDGE_A(m_unroll, ao, bo, co) \
 { \
-	n_powedges_8d(SKX_NR, n, EDGE_B, m_unroll, ao, bo, co); \
+	n_powedges(SKX_NR, n, EDGE_B, m_unroll, ao, bo, co); \
 	ao += m_unroll*rs_a*BLIS_SIZEOF_D; \
 	bo  = b; \
 	co += m_unroll*rs_c*BLIS_SIZEOF_D - n*cs_c*BLIS_SIZEOF_D; \
@@ -220,5 +220,5 @@ void bli_dgemmsup_rd_skx_intrin_24x8
 			    (int)m, (int)n, (int)k, *((double *)alpha), *((double *)beta), 
 			    (int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges_8d(SKX_MR, m, EDGE_A, ao, bo, co);
+	m_powedges(SKX_MR, m, EDGE_A, ao, bo, co);
 }

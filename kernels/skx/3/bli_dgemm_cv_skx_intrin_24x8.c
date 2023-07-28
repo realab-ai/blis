@@ -173,14 +173,14 @@
 #define VLOAD_A(mvidx, mask, ao) \
 { \
 	pmzloadu_8d(ao+mvidx*8*BLIS_SIZEOF_D, zmm[a_regs[mvidx]], mask); \
-	if (!no_prefetch && 1==rs_a) \
+	if (is_prefetch && 1==rs_a) \
 		prefetch_8d_at(A_L1_PREFETCH_DIST, ao+mvidx*8*BLIS_SIZEOF_D, cs_a); \
 }
 #define CV_KER_UK(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, ao, bo) \
 { \
 	m_packloop( 3, m_vecs, VLOAD_A, m_mask, ao); \
 	n_packloop(24, n_unroll, CV_KER_UN, m_vecs); \
-	if (!no_prefetch && 1==cs_b) \
+	if (is_prefetch && 1==cs_b) \
 		prefetch_8d_at(B_L1_PREFETCH_DIST, bo, rs_b); \
 	ao += cs_a*BLIS_SIZEOF_D; \
 	bo += rs_b*BLIS_SIZEOF_D; \
@@ -209,11 +209,11 @@
 { \
 	int m_vecs = div_up(m_unroll, 8); \
 	__mmask8 m_mask = edge_mask8(m_unroll); \
-	if (!no_prefetch && 1==rs_c) \
+	if (is_prefetch && 1==rs_c) \
 		m_packloop(3, m_vecs, prefetch_x8d_at, 8, co, cs_c, 8); \
-	if (!no_prefetch && 1==cs_c) \
+	if (is_prefetch && 1==cs_c) \
 		m_packloop(SKX_MR, m_unroll, prefetch_8d_at, co, rs_c); \
-	n_powedges_8d(SKX_NR, n, EDGE_B, m_unroll, m_vecs, m_mask, ao, bo, co); \
+	n_powedges(SKX_NR, n, EDGE_B, m_unroll, m_vecs, m_mask, ao, bo, co); \
 	ao += m_unroll*rs_a*BLIS_SIZEOF_D; \
 	bo  = b; \
 	co += m_unroll*rs_c*BLIS_SIZEOF_D - n*cs_c*BLIS_SIZEOF_D; \
@@ -278,7 +278,7 @@ void bli_dgemm_cv_skx_intrin_24x8
 
 	const bool is_alpha1     = *((double *)alpha)==1? true: false;
 	const bool is_beta0      = *((double *)beta )==0? true: false;
-	const bool no_prefetch   = false;
+	const bool is_prefetch   = true;
 	const int a_regs[]       = { 0,  1,  2};
 	const int b_regs[]       = { 3,  4};
 	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
@@ -300,7 +300,7 @@ void bli_dgemm_cv_skx_intrin_24x8
 				(int)m, (int)n, (int)k, *((double *)alpha), *((double *)beta), 
 				(int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges_8d(SKX_MR, m, EDGE_A, ao, bo, co);
+	m_powedges(SKX_MR, m, EDGE_A, ao, bo, co);
 }
 
 // --------------------------------------------------------------------
@@ -339,7 +339,7 @@ void bli_dgemmsup_cv_skx_intrin_24x8
 
 	const bool is_alpha1     = *((double *)alpha)==1? true: false;
 	const bool is_beta0      = *((double *)beta )==0? true: false;
-	const bool no_prefetch   = true;
+	const bool is_prefetch   = false;
 	const int a_regs[]       = { 0,  1,  2};
 	const int b_regs[]       = { 3,  4};
 	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
@@ -361,5 +361,5 @@ void bli_dgemmsup_cv_skx_intrin_24x8
 				(int)m, (int)n, (int)k, *((double *)alpha), *((double *)beta), 
 				(int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges_8d(SKX_MR, m, EDGE_A, ao, bo, co);
+	m_powedges(SKX_MR, m, EDGE_A, ao, bo, co);
 }

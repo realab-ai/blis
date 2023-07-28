@@ -36,6 +36,7 @@
 
 void bli_l3_set_schemas
      (
+	         opid_t  family,
              obj_t*  a,
              obj_t*  b,
        const obj_t*  c,
@@ -68,7 +69,41 @@ void bli_l3_set_schemas
 			schema_b = BLIS_PACKED_COL_PANELS_1E;
 		}
 	}
+	else
+	{
+		if ( bli_info_get_enable_fip() && 
+			( family == BLIS_GEMM ||
+			  family == BLIS_GEMMT ) )
+		{
+			const num_t dt   = bli_obj_dt( c );
+			const dim_t m    = bli_obj_length_after_trans( c );
+			const dim_t n    = bli_obj_width_after_trans( c );
+			const dim_t k    = bli_obj_width_after_trans( a );
+			const dim_t mr   = bli_cntx_get_blksz_def_dt( dt, BLIS_MR, cntx );
+			const dim_t nr   = bli_cntx_get_blksz_def_dt( dt, BLIS_NR, cntx );
+			const dim_t rs_a = bli_obj_has_notrans( a ) ? bli_obj_row_stride( a ) : bli_obj_col_stride( a );
+			const dim_t cs_b = bli_obj_has_notrans( b ) ? bli_obj_col_stride( b ) : bli_obj_row_stride( b );
 
+			// Interleaved packing according with reference: Xu, et al., 2023, 
+			// GEMMFIP: Unifying GEMM in BLIS
+			if ( bli_cntx_l3_supb_thresh_is_met( dt, m, n, k, cntx ) )
+			{
+				schema_b = BLIS_NOT_PACKED;
+				// even no pack, we still set the panel_dim and panel_stride 
+				// for nr loops
+				bli_obj_set_panel_dim( nr, b );
+				bli_obj_set_panel_stride( nr*cs_b, b );
+			}
+			if ( bli_cntx_l3_supa_thresh_is_met( dt, m, n, k, cntx ) )
+			{
+				schema_a = BLIS_NOT_PACKED;
+				// even no pack, we still set the panel_dim and panel_stride 
+				// for mr loops
+				bli_obj_set_panel_dim( mr, a );
+				bli_obj_set_panel_stride( mr*rs_a, a );
+			}
+		}
+	}
 	// Embed the schemas into the objects for A and B. This is a sort of hack
 	// for communicating the desired pack schemas to bli_gemm_cntl_create()
 	// (via bli_l3_thread_decorator() and bli_l3_cntl_create_if()). This allows
