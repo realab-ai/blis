@@ -83,7 +83,7 @@ void PASTEMAC(ch,varname) \
 		  NULL  \
 		); \
 	} \
-	else \
+	else if ( !PASTEMAC(ch,eq1)( *beta ) ) \
 	{ \
 		/* y = beta * y; */ \
 		PASTEMAC2(ch,scalv,BLIS_TAPI_EX_SUF) \
@@ -100,6 +100,12 @@ void PASTEMAC(ch,varname) \
 	/* Query the context for the kernel function pointer and fusing factor. */ \
 	axpyf_ker_ft kfp_af = bli_cntx_get_ukr_dt( dt, BLIS_AXPYF_KER, cntx ); \
 	b_fuse = bli_cntx_get_blksz_def_dt( dt, BLIS_AF, cntx ); \
+	if ( bli_info_get_enable_fip() ) { \
+		dim_t mt = bli_cntx_get_blksz_def_dt( dt, BLIS_MT, cntx ); \
+		dim_t kt = bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx ); \
+		/* mt/kt are defined in gemm context but now used in gemv context with 2x */ \
+		b_fuse = ( m*n <= 2*mt*kt ) ? n_iter : b_fuse; \
+	} \
 \
 	for ( i = 0; i < n_iter; i += f ) \
 	{ \

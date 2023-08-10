@@ -1,23 +1,17 @@
 What's New
 ------------
 
- * **Support AVX512 GEMM and GEMMSUP kernels on SKX** 
- * **Unified GEMM/GEMMT for both small and large problem sizes** 
+ * **Support AVX512 level-3/1f/1 kernels on SkylakeX** 
+ * **Unified GEMM/GEMMSUP for both small and large problem sizes** 
 
 Key Features
 ------------
 
- * **Edges self-adaptive**: Instead of define different kernels for different edge cases, all the new kernels are self-adaptive with the edge cases:
-   * cv_d24x8 (used by GEMM and GEMMSUP): column-vector double kernel at size 24m x 8n;
-   * rd_d24x8 (used by GEMMSUP): row-dot double kernel at size 24m x 8n;
-   * cv_s48x8 (used by GEMM and GEMMSUP): column-vector float kernel at size 48m x 8n;
-   * rd_s48x8 (used by GEMMSUP): row-dot float kernel at size 48m x 8n;
+ * **Edges self-adaptive**: Leverages macro templates to make it much easier to code up the numerous edge case kernels that arise for the SkylakeX's larger microtile;
 
-    Obviously, such adaptive features can help remove a large number of different GEMMSUP kernel definitions. And one step further, GEMM kernels with edge adaptive feature are special cases of GEMMSUP kernels which will ease the maintenance of GEMM/GEMMSUP kernels.
+ * **From inline ASM to instrinsics**: In order to accommodate the complex process logic caused by edges self-adaptive, coded the kernels with the instruction instead of inline ASM. Additional performance losses are avoided by following some necessary compiler efficiency best practices;
 
- * **From inline ASM to instrinsics**: In order to accommodate the complex process logic caused by edges self-adaptive, coded the kernels with the instruction instead of inline ASM. Additional performance losses are avoided by following some necessary compiler efficiency best practices:
-
- * **Unified GEMM ( GEMMT ) for both small and large problem sizes**  by introducing matrix-shape conditioned cntl tree. Additional configure --enable-fip --disable-fip (default) were applied to enable/disable this feature. Packing is still work along (instead of fused in kernel) in the unified processs.
+ * **Unified GEMMSUP into GEMM for both small and large problem sizes**  by introducing matrix-shape conditioned cntl tree. Additional configure --enable-fip --disable-fip (default) were applied to enable/disable this feature. Packing is still work along (instead of fused in kernel) in the unified processs.
 
 Performance Benchmark
 ------------

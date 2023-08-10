@@ -49,66 +49,87 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	 cntx,
 	 
 	 // level-3
-	 BLIS_GEMM_UKR,		BLIS_FLOAT ,	bli_sgemm_cv_skx_intrin_48x8,
-	 BLIS_GEMM_UKR,		BLIS_DOUBLE,	bli_dgemm_cv_skx_intrin_24x8,
+	 BLIS_GEMM_UKR,     BLIS_FLOAT,     bli_sgemm_cv_skx_int_48x8,
+	 BLIS_GEMM_UKR,     BLIS_DOUBLE,    bli_dgemm_cv_skx_int_24x8,
 
 	 // axpyf
-	 BLIS_AXPYF_KER,	BLIS_FLOAT,		bli_saxpyf_zen_int_8,
-	 BLIS_AXPYF_KER,	BLIS_DOUBLE,	bli_daxpyf_zen_int_8,
+	 //BLIS_AXPYF_KER,   BLIS_FLOAT,     bli_saxpyf_zen_int_8,
+	 //BLIS_AXPYF_KER,   BLIS_DOUBLE,    bli_daxpyf_zen_int_8,
+	 BLIS_AXPYF_KER,    BLIS_FLOAT,     bli_saxpyf_skx_int_128,
+	 BLIS_AXPYF_KER,    BLIS_DOUBLE,    bli_daxpyf_skx_int_64,
 
 	 // dotxf
-	 BLIS_DOTXF_KER,	BLIS_FLOAT,		bli_sdotxf_zen_int_8,
-	 BLIS_DOTXF_KER,	BLIS_DOUBLE,	bli_ddotxf_zen_int_8,
+	 //BLIS_DOTXF_KER,   BLIS_FLOAT,     bli_sdotxf_zen_int_8,
+	 //BLIS_DOTXF_KER,   BLIS_DOUBLE,    bli_ddotxf_zen_int_8,
+	 BLIS_DOTXF_KER,    BLIS_FLOAT,     bli_sdotxf_skx_int_8,
+	 BLIS_DOTXF_KER,    BLIS_DOUBLE,    bli_ddotxf_skx_int_8,
 
-#if 1
 	 // amaxv
-	 BLIS_AMAXV_KER,	BLIS_FLOAT,		bli_samaxv_zen_int,
-	 BLIS_AMAXV_KER,	BLIS_DOUBLE,	bli_damaxv_zen_int,
-#endif
+	 //BLIS_AMAXV_KER,   BLIS_FLOAT,	 bli_samaxv_zen_int,
+	 //BLIS_AMAXV_KER,   BLIS_DOUBLE,    bli_damaxv_zen_int,
+	 BLIS_AMAXV_KER,    BLIS_FLOAT,	    bli_samaxv_skx_int_16,
+	 BLIS_AMAXV_KER,    BLIS_DOUBLE,    bli_damaxv_skx_int_8,
 
 	 // axpyv
-#if 0
-	 BLIS_AXPYV_KER,	BLIS_FLOAT,		bli_saxpyv_zen_int,
-	 BLIS_AXPYV_KER,	BLIS_DOUBLE,	bli_daxpyv_zen_int,
-#else
-	 BLIS_AXPYV_KER,	BLIS_FLOAT,		bli_saxpyv_zen_int10,
-	 BLIS_AXPYV_KER,	BLIS_DOUBLE,	bli_daxpyv_zen_int10,
-#endif
+	 //BLIS_AXPYV_KER,   BLIS_FLOAT,	 bli_saxpyv_zen_int10,
+	 //BLIS_AXPYV_KER,   BLIS_DOUBLE,    bli_daxpyv_zen_int10,
+	 BLIS_AXPYV_KER,    BLIS_FLOAT,	    bli_saxpyv_skx_int_128,
+	 BLIS_AXPYV_KER,    BLIS_DOUBLE,    bli_daxpyv_skx_int_64,
 
 	 // dotv
-	 BLIS_DOTV_KER,		BLIS_FLOAT,		bli_sdotv_zen_int,
-	 BLIS_DOTV_KER,		BLIS_DOUBLE,	bli_ddotv_zen_int,
+	 //BLIS_DOTV_KER,	 BLIS_FLOAT,	 bli_sdotv_zen_int,
+	 //BLIS_DOTV_KER,	 BLIS_DOUBLE,    bli_ddotv_zen_int,
+	 BLIS_DOTV_KER,     BLIS_FLOAT,     bli_sdotv_skx_int_128,
+	 BLIS_DOTV_KER,     BLIS_DOUBLE,    bli_ddotv_skx_int_64,
 
 	 // dotxv
-	 BLIS_DOTXV_KER,	BLIS_FLOAT,		bli_sdotxv_zen_int,
-	 BLIS_DOTXV_KER,	BLIS_DOUBLE,	bli_ddotxv_zen_int,
+	 //BLIS_DOTXV_KER,    BLIS_FLOAT,	  bli_sdotxv_zen_int,
+	 //BLIS_DOTXV_KER,    BLIS_DOUBLE,    bli_ddotxv_zen_int,
+	 BLIS_DOTXV_KER,    BLIS_FLOAT,     bli_sdotxv_skx_int_128,
+	 BLIS_DOTXV_KER,    BLIS_DOUBLE,    bli_ddotxv_skx_int_64,
 
 	 // scalv
-#if 0
-	 BLIS_SCALV_KER,	BLIS_FLOAT,		bli_sscalv_zen_int,
-	 BLIS_SCALV_KER,	BLIS_DOUBLE,	bli_dscalv_zen_int,
-#else
-	 BLIS_SCALV_KER,	BLIS_FLOAT,		bli_sscalv_zen_int10,
-	 BLIS_SCALV_KER,	BLIS_DOUBLE,	bli_dscalv_zen_int10,
-#endif
-	 // gemmsup
-	 BLIS_GEMMSUP_RRR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_intrin_24x8,
-	 BLIS_GEMMSUP_RRC_UKR, BLIS_DOUBLE, bli_dgemmsup_rd_skx_intrin_24x8,
-	 BLIS_GEMMSUP_RCR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_intrin_24x8,
-	 BLIS_GEMMSUP_RCC_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_intrin_24x8,
-	 BLIS_GEMMSUP_CRR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_intrin_24x8,
-	 BLIS_GEMMSUP_CRC_UKR, BLIS_DOUBLE, bli_dgemmsup_rd_skx_intrin_24x8,
-	 BLIS_GEMMSUP_CCR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_intrin_24x8,
-	 BLIS_GEMMSUP_CCC_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_intrin_24x8,
+	 //BLIS_SCALV_KER,    BLIS_FLOAT,	  bli_sscalv_zen_int10,
+	 //BLIS_SCALV_KER,    BLIS_DOUBLE,    bli_dscalv_zen_int10,
+	 BLIS_SCALV_KER,    BLIS_FLOAT,     bli_sscalv_skx_int_128,
+	 BLIS_SCALV_KER,    BLIS_DOUBLE,    bli_dscalv_skx_int_64,
 
-	 BLIS_GEMMSUP_RRR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
-	 BLIS_GEMMSUP_RRC_UKR, BLIS_FLOAT, bli_sgemmsup_rd_skx_intrin_48x8,
-	 BLIS_GEMMSUP_RCR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
-	 BLIS_GEMMSUP_RCC_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
-	 BLIS_GEMMSUP_CRR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
-	 BLIS_GEMMSUP_CRC_UKR, BLIS_FLOAT, bli_sgemmsup_rd_skx_intrin_48x8,
-	 BLIS_GEMMSUP_CCR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
-	 BLIS_GEMMSUP_CCC_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_intrin_48x8,
+	 // setv
+	 //BLIS_SETV_KER,     BLIS_FLOAT,     bli_ssetv_zen_int,
+	 //BLIS_SETV_KER,     BLIS_DOUBLE,    bli_dsetv_zen_int,
+	 BLIS_SETV_KER,     BLIS_FLOAT,     bli_ssetv_skx_int_128,
+	 BLIS_SETV_KER,     BLIS_DOUBLE,    bli_dsetv_skx_int_64,
+
+	 // swapv
+	 //BLIS_SWAPV_KER,     BLIS_FLOAT,    bli_sswapv_zen_int8,
+	 //BLIS_SWAPV_KER,     BLIS_DOUBLE,   bli_dswapv_zen_int8,
+	 BLIS_SWAPV_KER,     BLIS_FLOAT,    bli_sswapv_skx_int_128,
+	 BLIS_SWAPV_KER,     BLIS_DOUBLE,   bli_dswapv_skx_int_64,
+
+	 // copyv
+	 //BLIS_COPYV_KER,     BLIS_FLOAT,    bli_scopyv_zen_int,
+	 //BLIS_COPYV_KER,     BLIS_DOUBLE,   bli_dcopyv_zen_int,
+	 BLIS_COPYV_KER,     BLIS_FLOAT,    bli_scopyv_skx_int_128,
+	 BLIS_COPYV_KER,     BLIS_DOUBLE,   bli_dcopyv_skx_int_64,
+	 
+	 // gemmsup
+	 BLIS_GEMMSUP_RRR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_int_24x8,
+	 BLIS_GEMMSUP_RRC_UKR, BLIS_DOUBLE, bli_dgemmsup_rd_skx_int_2x8,
+	 BLIS_GEMMSUP_RCR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_int_24x8,
+	 BLIS_GEMMSUP_RCC_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_int_24x8,
+	 BLIS_GEMMSUP_CRR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_int_24x8,
+	 BLIS_GEMMSUP_CRC_UKR, BLIS_DOUBLE, bli_dgemmsup_rd_skx_int_2x8,
+	 BLIS_GEMMSUP_CCR_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_int_24x8,
+	 BLIS_GEMMSUP_CCC_UKR, BLIS_DOUBLE, bli_dgemmsup_cv_skx_int_24x8,
+
+	 BLIS_GEMMSUP_RRR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_int_48x8,
+	 BLIS_GEMMSUP_RRC_UKR, BLIS_FLOAT, bli_sgemmsup_rd_skx_int_2x8,
+	 BLIS_GEMMSUP_RCR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_int_48x8,
+	 BLIS_GEMMSUP_RCC_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_int_48x8,
+	 BLIS_GEMMSUP_CRR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_int_48x8,
+	 BLIS_GEMMSUP_CRC_UKR, BLIS_FLOAT, bli_sgemmsup_rd_skx_int_2x8,
+	 BLIS_GEMMSUP_CCR_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_int_48x8,
+	 BLIS_GEMMSUP_CCC_UKR, BLIS_FLOAT, bli_sgemmsup_cv_skx_int_48x8,
 
 	 BLIS_VA_END
 	);
@@ -149,7 +170,7 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],       48,    24,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],        8,     8,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_MC ],      432,   240,    -1,    -1 );
-	bli_blksz_init     ( &blkszs[ BLIS_KC ],      336,   256,    -1,    -1,
+	bli_blksz_init     ( &blkszs[ BLIS_KC ],      432,   304,    -1,    -1,
 	                                              432,   320,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC ],     3072,  3072,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_AF ],        8,     8,    -1,    -1 );
@@ -157,9 +178,9 @@ void bli_cntx_init_skx( cntx_t* cntx )
 
 	// Initialize sup thresholds with architecture-appropriate values.
 	//                                              s      d      c      z
-	bli_blksz_init_easy( &blkszs[ BLIS_MT ],      432,   216,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NT ],      432,   216,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KT ],      432,   216,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MT ],      432,   208,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NT ],      432,   208,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KT ],      432,   208,    -1,    -1 );
 
 	// Initialize level-3 sup blocksize objects with architecture-specific
 	// values.

@@ -71,6 +71,12 @@ void PASTEMAC(ch,varname) \
 	/* Query the context for the kernel function pointer and fusing factor. */ \
 	dotxf_ker_ft kfp_df = bli_cntx_get_ukr_dt( dt, BLIS_DOTXF_KER, cntx ); \
 	b_fuse = bli_cntx_get_blksz_def_dt( dt, BLIS_DF, cntx ); \
+	if ( bli_info_get_enable_fip()  ) { \
+         dim_t mt = bli_cntx_get_blksz_def_dt( dt, BLIS_MT, cntx  ); \
+         dim_t kt = bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx  ); \
+         /* mt/kt are defined in gemm context but now used in gemv context with 2x */ \
+         b_fuse = ( m*n <= 2*mt*kt  ) ? n_iter : b_fuse; \
+     } \
 \
 	for ( i = 0; i < n_iter; i += f ) \
 	{ \

@@ -105,38 +105,46 @@
 }
 #define UPDATE_C_COL(nidx, vecs, mask, co, ldc, s_c) \
 { \
-	if (!is_alpha1) { \
-		m_packloop(3, vecs, ALPHA_C_COL, nidx); \
-	} \
+	ALPHA_C_COL( 0, nidx ); \
+	ALPHA_C_COL( 1, nidx ); \
+	ALPHA_C_COL( 2, nidx ); \
 	if (1==s_c) { \
 		if (!is_beta0) { \
-			m_packloop(3, vecs, BETA_C_COL, nidx, co, mask); \
+			if ( 1  <= vecs ) BETA_C_COL( 0, nidx, co, mask ); \
+			if ( 2  <= vecs ) BETA_C_COL( 1, nidx, co, mask ); \
+			if ( 3  <= vecs ) BETA_C_COL( 2, nidx, co, mask ); \
 		} \
-		m_packloop(3, vecs, STORE_C_COL, nidx, co, mask ); \
+		if ( 1  <= vecs ) STORE_C_COL( 0, nidx, co, mask ); \
+		if ( 2  <= vecs ) STORE_C_COL( 1, nidx, co, mask ); \
+		if ( 3  <= vecs ) STORE_C_COL( 2, nidx, co, mask ); \
 	} \
 	else {\
 		if (!is_beta0) { \
-			m_packloop(3, vecs, BETA_C_SCOL, nidx, co, s_c, mask); \
+			if ( 1  <= vecs ) BETA_C_SCOL( 0, nidx, co, s_c, mask ); \
+			if ( 2  <= vecs ) BETA_C_SCOL( 1, nidx, co, s_c, mask ); \
+			if ( 3  <= vecs ) BETA_C_SCOL( 2, nidx, co, s_c, mask ); \
 		} \
-		m_packloop(3, vecs, STORE_C_SCOL, nidx, co, s_c, mask ); \
+		if ( 1  <= vecs ) STORE_C_SCOL( 0, nidx, co, s_c, mask ); \
+		if ( 2  <= vecs ) STORE_C_SCOL( 1, nidx, co, s_c, mask ); \
+		if ( 3  <= vecs ) STORE_C_SCOL( 2, nidx, co, s_c, mask ); \
 	} \
 	co += ldc*BLIS_SIZEOF_S; \
 }
-#define UPDATE_C_ROW(midx, vecs, mask, co, ldc, s_c) \
+#define UPDATE_C_ROW(midx, mask, co, ldc, s_c) \
 { \
 	int idx_r = (midx%16)/2; \
 	int stack = midx/16; \
 	if (!is_alpha1 && (midx)%2==0) { \
-		n_packloop(1, vecs, ALPHA_C_ROW, idx_r, stack); \
+		ALPHA_C_ROW( 0, idx_r, stack ); \
 	} \
 	if (!is_beta0) { \
-		n_packloop(1, vecs, BETA_C_ROW, idx_r, stack, co, mask); \
+		BETA_C_ROW( 0, idx_r, stack, co, mask ); \
 	} \
 	if ((midx)%2 == 0) {\
-		n_packloop(1, vecs, STORE_CL_ROW, idx_r, stack, co, mask); \
+		STORE_CL_ROW( 0, idx_r, stack, co, mask ); \
 	} \
 	else { \
-		n_packloop(1, vecs, STORE_CH_ROW, idx_r, stack, co, mask); \
+		STORE_CH_ROW( 0, idx_r, stack, co, mask ); \
 	} \
 	co += ldc*BLIS_SIZEOF_S; \
 }
@@ -148,17 +156,19 @@
 			            zmm[c_regs[12+mvidx]], zmm[c_regs[15+mvidx]], \
 			            zmm[c_regs[18+mvidx]], zmm[c_regs[21+mvidx]]); \
 }
-#define UPDATE_C(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, co) \
+#define UPDATE_C(m_unroll, m_vecs, m_mask, n_unroll, n_mask, co) \
 { \
 	zmm[alpha_load_reg] = pload1_16f(alpha); \
 	zmm[ beta_load_reg] = pload1_16f(beta); \
 	if (1==cs_c) {\
-		m_packloop(3, m_vecs, TRANSPOSE_C_BLK, m_mask, n_mask); \
-		m_packloop(48, m_unroll, UPDATE_C_ROW, n_vecs, n_mask, co, rs_c, cs_c); \
+		if ( 1  <= m_vecs ) TRANSPOSE_C_BLK( 0, m_mask, n_mask ); \
+		if ( 2  <= m_vecs ) TRANSPOSE_C_BLK( 1, m_mask, n_mask ); \
+		if ( 3  <= m_vecs ) TRANSPOSE_C_BLK( 2, m_mask, n_mask ); \
+		m_packloop( SKX_MR, m_unroll, UPDATE_C_ROW, n_mask, co, rs_c, cs_c ); \
 		co -= m_unroll*rs_c*BLIS_SIZEOF_S; \
 	} \
 	else { \
-		n_packloop(48, n_unroll, UPDATE_C_COL, m_vecs, m_mask, co, cs_c, rs_c); \
+		n_packloop( SKX_NR, n_unroll, UPDATE_C_COL, m_vecs, m_mask, co, cs_c, rs_c ); \
 		co -= n_unroll*cs_c*BLIS_SIZEOF_S; \
 	} \
 }
@@ -166,65 +176,74 @@
 // --------------------------------------------------------------------
 // Accumulate C
 // --------------------------------------------------------------------
-#define ACCUMULATE_C(mvidx, nidx) \
+#define ACCUMULATE_C( mvidx, nidx, kidx, k_align, ao ) \
 { \
-	zmm[c_regs[nidx*3+mvidx]] = \
-		pfmadd_16f( zmm[a_regs[mvidx]], \
-			        zmm[b_regs[0]], \
-			        zmm[c_regs[nidx*3+mvidx]]); \
+	zmm[c_regs[nidx*3+mvidx]] = pfmadd_16f( zmm[a_regs[mvidx*k_align+kidx]], \
+			                                zmm[b_regs[kidx]], \
+			                                zmm[c_regs[nidx*3+mvidx]]); \
 }
-#define CV_KER_UN(nidx, m_vecs) \
+#define CV_KER_UN( nidx, kidx, m_vecs, k_align, ao, bo ) \
 { \
-	zmm[b_regs[0]] = pload1_16f(bo+nidx*BLIS_SIZEOF_S*cs_b); \
-	m_packloop(3, m_vecs, ACCUMULATE_C, nidx); \
-}
-
-#define VLOAD_A(mvidx, mask, ao) \
-{ \
-	pmzloadu_16f(ao+ mvidx*16*BLIS_SIZEOF_S, zmm[a_regs[mvidx]], mask); \
-	if(is_prefetch && 1==rs_a) \
-		prefetch_16f_at(A_L1_PREFETCH_DIST, ao+mvidx*16*BLIS_SIZEOF_S, cs_a); \
-}
-#define CV_KER_UK(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, ao, bo) \
-{ \
-	m_packloop(3, div_up(m_unroll, 16), VLOAD_A, m_mask, ao); \
-	n_packloop(8, n_unroll, CV_KER_UN, m_vecs); \
-	if(is_prefetch && 1==cs_b) \
-		prefetch_16f_at(B_L1_PREFETCH_DIST, bo, rs_b); \
-	ao += cs_a*BLIS_SIZEOF_S; \
-	bo += rs_b*BLIS_SIZEOF_S; \
+	zmm[b_regs[kidx]] = pload1_16f( bo+(kidx*rs_b+nidx*cs_b)*BLIS_SIZEOF_S ); \
+	if ( 1  <= m_vecs ) ACCUMULATE_C( 0, nidx, kidx, k_align, ao ); \
+	if ( 2  <= m_vecs ) ACCUMULATE_C( 1, nidx, kidx, k_align, ao ); \
+	if ( 3  <= m_vecs ) ACCUMULATE_C( 2, nidx, kidx, k_align, ao ); \
 }
 
-#define KLOOP(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, ao, bo, co) \
+#define VLOAD_A( mvidx, kidx, mask, k_align, ao ) \
 { \
-	for (int p=0; p<k; p++) { \
-		CV_KER_UK(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, ao, bo); \
+	if ( 1==rs_a ) { \
+		pmzloadu_16f( ao+(kidx*cs_a+mvidx*16)*BLIS_SIZEOF_S, zmm[a_regs[mvidx*k_align+kidx]], mask ); \
+		if( is_prefetch  ) \
+			prefetch_16f_at( A_L1_PREFETCH_DIST+kidx, ao+mvidx*16*BLIS_SIZEOF_S, cs_a, _MM_HINT_T0  ); \
+	} \
+	else { \
+		pmzloads_16f( ao+(kidx*cs_a+mvidx*16*rs_a)*BLIS_SIZEOF_S, zmm[a_regs[mvidx*k_align+kidx]], rs_a, mask ); \
 	} \
 }
-
-#define EDGE_B(n_unroll, m_unroll, m_vecs, m_mask, ao, bo, co) \
+#define CV_KER_UK( kidx, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo) \
 { \
-	int n_vecs = div_up(n_unroll, 16); \
+	if ( 1  <= m_vecs ) VLOAD_A( 0, kidx, m_mask, k_align, ao ); \
+	if ( 2  <= m_vecs ) VLOAD_A( 1, kidx, m_mask, k_align, ao ); \
+	if ( 3  <= m_vecs ) VLOAD_A( 2, kidx, m_mask, k_align, ao ); \
+	if(is_prefetch && 1==cs_b) \
+		prefetch_16f_at( B_L1_PREFETCH_DIST+kidx, bo, rs_b, _MM_HINT_T0  ); \
+	n_packloop( SKX_NR, n_unroll, CV_KER_UN, kidx, m_vecs, k_align, ao, bo ); \
+}
+
+#define CV_KER_PK( k_unroll, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo  ) \
+{ \
+	if ( 1 <= k_unroll ) CV_KER_UK( 0, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo ); \
+	if ( 2 <= k_unroll ) CV_KER_UK( 1, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo ); \
+	ao += k_unroll*cs_a*BLIS_SIZEOF_S; \
+	bo += k_unroll*rs_b*BLIS_SIZEOF_S; \
+}
+
+#define EDGE_B(n_unroll, m_unroll, m_vecs, m_mask, k_align, ao, bo, co) \
+{ \
 	__mmask16 n_mask = edge_mask16(n_unroll); \
-	KLOOP(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, ao, bo, co); \
-	UPDATE_C(m_unroll, m_vecs, m_mask, n_unroll, n_vecs, n_mask, co); \
+	k_alignedges( k_align, k, CV_KER_PK, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo ); \
+	UPDATE_C( m_unroll, m_vecs, m_mask, n_unroll, n_mask, co ); \
 	ao -= k*cs_a*BLIS_SIZEOF_S; \
 	bo -= k*rs_b*BLIS_SIZEOF_S; \
 	bo += n_unroll*cs_b*BLIS_SIZEOF_S; \
 	co += n_unroll*cs_c*BLIS_SIZEOF_S; \
 }
 
-#define EDGE_A(m_unroll, ao, bo, co) \
+#define EDGE_A(m_unroll, k_align, ao, bo, co) \
 { \
 	int m_vecs = div_up(m_unroll, 16); \
 	__mmask16 m_mask = edge_mask16(m_unroll); \
-	if (is_prefetch && 1==rs_c) \
-		m_packloop(3, m_vecs, prefetch_x16f_at,  8, co, cs_c, 16); \
+	if (is_prefetch && 1==rs_c) { \
+		if ( 1  <= m_vecs ) prefetch_x16f_at( 0, 8, co, cs_c, 16, _MM_HINT_T0 ); \
+		if ( 2  <= m_vecs ) prefetch_x16f_at( 1, 8, co, cs_c, 16, _MM_HINT_T0 ); \
+		if ( 3  <= m_vecs ) prefetch_x16f_at( 2, 8, co, cs_c, 16, _MM_HINT_T0 ); \
+	} \
 	if (is_prefetch && 1==cs_c) \
-		m_packloop(SKX_MR, m_unroll, prefetch_16f_at, co, rs_c); \
-	n_powedges(SKX_NR, n, EDGE_B, m_unroll, m_vecs, m_mask, ao, bo, co); \
+		m_packloop( SKX_MR, m_unroll, prefetch_16f_at, co, rs_c, _MM_HINT_T0 ); \
+	n_powedges(SKX_NR, n, EDGE_B, m_unroll, m_vecs, m_mask, k_align, ao, bo, co); \
 	ao += m_unroll*rs_a*BLIS_SIZEOF_S; \
-	bo  = b; \
+	bo -= n*cs_b*BLIS_SIZEOF_S; \
 	co += m_unroll*rs_c*BLIS_SIZEOF_S - n*cs_c*BLIS_SIZEOF_S; \
 }
 
@@ -260,7 +279,7 @@
 //     max_a_unroll: 48, 32, 16, 8, 4, 2, 1
 //     max_b_unroll: 8, 4, 2, 1
 // --------------------------------------------------------------------
-void bli_sgemm_cv_skx_intrin_48x8
+void bli_sgemm_cv_skx_int_48x8
 	 (
 			 dim_t      m,
 			 dim_t      n,
@@ -288,8 +307,8 @@ void bli_sgemm_cv_skx_intrin_48x8
 	const bool is_alpha1     = *((float *)alpha)==1? true: false;
 	const bool is_beta0      = *((float *)beta )==0? true: false;
 	const bool is_prefetch   = true;
-	const int a_regs[]       = { 0,  1,  2};
-	const int b_regs[]       = { 3,  4};
+	const int a_regs[]       = { 0,  1,  2,  3,  4,  5 };
+	const int b_regs[]       = { 6,  7};
 	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
 			                    12, 20, 28, 13, 21, 29, 14, 22, 30, 15, 23, 31};
 	const int c_load_regs[]  = { 0,  1,  2};
@@ -309,7 +328,7 @@ void bli_sgemm_cv_skx_intrin_48x8
 			    (int)m, (int)n, (int)k, *((float *)alpha), *((float *)beta),
 			    (int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges(SKX_MR, m, EDGE_A, ao, bo, co);
+	m_powedges(SKX_MR, m, EDGE_A, 1, ao, bo, co);
 }
 
 // --------------------------------------------------------------------
@@ -317,7 +336,7 @@ void bli_sgemm_cv_skx_intrin_48x8
 //     max_a_unroll: 48, 32, 16, 8, 4, 2, 1
 //     max_b_unroll: 8, 4, 2, 1
 // --------------------------------------------------------------------
-void bli_sgemmsup_cv_skx_intrin_48x8
+void bli_sgemmsup_cv_skx_int_48x8
 	 (
 			conj_t      conja,
 			conj_t      conjb,
@@ -349,8 +368,8 @@ void bli_sgemmsup_cv_skx_intrin_48x8
 	const bool is_alpha1     = *((float *)alpha)==1? true: false;
 	const bool is_beta0      = *((float *)beta )==0? true: false;
 	const bool is_prefetch   = false;
-	const int a_regs[]       = { 0,  1,  2};
-	const int b_regs[]       = { 3,  4};
+	const int a_regs[]       = { 0,  1,  2,  3,  4,  5 };
+	const int b_regs[]       = { 6,  7};
 	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
 			                    12, 20, 28, 13, 21, 29, 14, 22, 30, 15, 23, 31};
 	const int c_load_regs[]  = { 0,  1,  2};
@@ -370,6 +389,6 @@ void bli_sgemmsup_cv_skx_intrin_48x8
 			    (int)m, (int)n, (int)k, *((float *)alpha), *((float *)beta),
 			    (int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges(SKX_MR, m, EDGE_A, ao, bo, co);
+	m_powedges(SKX_MR, m, EDGE_A, 1, ao, bo, co);
 }
 

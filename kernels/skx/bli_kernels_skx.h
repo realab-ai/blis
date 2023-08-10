@@ -31,20 +31,52 @@
    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-// -- level-3 ------------------------------------------------------------------
-GEMM_UKR_PROT( float ,   s, gemm_skx_asm_32x12_l2 )
-GEMM_UKR_PROT( float ,   s, gemm_skx_asm_12x32_l2 )
+// -- level-3 ---------------------------------------------------------
+GEMM_UKR_PROT( float ,    s, gemm_skx_asm_32x12_l2 )
+GEMM_UKR_PROT( float ,    s, gemm_skx_asm_12x32_l2 )
 
-GEMM_UKR_PROT( double,   d, gemm_skx_asm_16x12_l2 )
-GEMM_UKR_PROT( double,   d, gemm_skx_asm_16x14 )
+GEMM_UKR_PROT( double,    d, gemm_skx_asm_16x12_l2 )
+GEMM_UKR_PROT( double,    d, gemm_skx_asm_16x14 )
 
 // gemm_cv
-GEMM_UKR_PROT(     float,   s, gemm_cv_skx_intrin_48x8 )
-GEMM_UKR_PROT(    double,   d, gemm_cv_skx_intrin_24x8 )
+GEMM_UKR_PROT( float,     s, gemm_cv_skx_int_48x8 )
+GEMM_UKR_PROT( double,    d, gemm_cv_skx_int_24x8 )
 // gemmsup_cv
-GEMMSUP_KER_PROT(  float,   s, gemmsup_cv_skx_intrin_48x8 )
-GEMMSUP_KER_PROT( double,   d, gemmsup_cv_skx_intrin_24x8 )
+GEMMSUP_KER_PROT( float,  s, gemmsup_cv_skx_int_48x8 )
+GEMMSUP_KER_PROT( double, d, gemmsup_cv_skx_int_24x8 )
 // gemmsup_rd
-GEMMSUP_KER_PROT(  float,   s, gemmsup_rd_skx_intrin_48x8 )
-GEMMSUP_KER_PROT( double,   d, gemmsup_rd_skx_intrin_24x8 )
+GEMMSUP_KER_PROT( float,  s, gemmsup_rd_skx_int_2x8 )
+GEMMSUP_KER_PROT( double, d, gemmsup_rd_skx_int_2x8 )
 
+// -- level-1f --------------------------------------------------------
+AXPYF_KER_PROT( float,    s, axpyf_skx_int_128 )
+AXPYF_KER_PROT( double,   d, axpyf_skx_int_64 )
+
+DOTXF_KER_PROT( float,    s, dotxf_skx_int_8 )
+DOTXF_KER_PROT( double,   d, dotxf_skx_int_8 )
+
+// -- level-1 ---------------------------------------------------------
+AMAXV_KER_PROT(  float,   s, amaxv_skx_int_16 )
+AMAXV_KER_PROT( double,   d, amaxv_skx_int_8 )
+
+AXPYV_KER_PROT(  float,   s, axpyv_skx_int_128 )
+AXPYV_KER_PROT( double,   d, axpyv_skx_int_64 )
+
+DOTXV_KER_PROT(  float,   s, dotxv_skx_int_128 )
+DOTXV_KER_PROT( double,   d, dotxv_skx_int_64 )
+
+DOTV_KER_PROT(  float,    s, dotv_skx_int_128 )
+DOTV_KER_PROT( double,    d, dotv_skx_int_64 )
+
+SCALV_KER_PROT(  float,   s, scalv_skx_int_128 )
+SCALV_KER_PROT( double,   d, scalv_skx_int_64 )
+
+SETV_KER_PROT(  float,    s, setv_skx_int_128 )
+SETV_KER_PROT( double,    d, setv_skx_int_64 )
+
+SWAPV_KER_PROT(  float,   s, swapv_skx_int_128 )
+SWAPV_KER_PROT( double,   d, swapv_skx_int_64 )
+
+COPYV_KER_PROT(  float,   s, copyv_skx_int_128 )
+COPYV_KER_PROT( double,   d, copyv_skx_int_64 )
+// -- end -------------------------------------------------------------

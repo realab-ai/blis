@@ -58,8 +58,9 @@ cntl_t* bli_gemmbp_cntl_create
        void_fp ker
      )
 {
-	void_fp macro_kernel_fp;
-	cntl_t* post_node;
+	void_fp macro_kernel_fp  = NULL;
+	cntl_t* post_node = NULL;
+	bool unpacked_ab  = ( schema_a == BLIS_NOT_PACKED && schema_b == BLIS_NOT_PACKED ) ? true : false;
 	// Choose the default macrokernel based on the operation family...
 	if      ( family == BLIS_GEMM )  macro_kernel_fp = bli_gemm_ker_var2;
 	else if ( family == BLIS_GEMMT ) macro_kernel_fp =
@@ -83,21 +84,21 @@ cntl_t* bli_gemmbp_cntl_create
 	// Create two nodes for the macro-kernel.
 	cntl_t* gemm_cntl_bu_ke = bli_gemm_cntl_create_node
 	(
-	  pool,         // the thread's sba pool
-	  family,       // the operation family
-	  BLIS_MR,
-	  NULL,         // variant function pointer not used
-	  NULL          // no sub-node; this is the leaf of the tree.
+		pool,         // the thread's sba pool
+		family,       // the operation family
+		BLIS_MR,
+		NULL,         // variant function pointer not used
+		NULL          // no sub-node; this is the leaf of the tree.
 	);
 	post_node = gemm_cntl_bu_ke;
 
 	cntl_t* gemm_cntl_bp_bu = bli_gemm_cntl_create_node
 	(
-	  pool,         // the thread's sba pool
-	  family,
-	  BLIS_NR,
-	  macro_kernel_fp,
-	  post_node
+		pool,         // the thread's sba pool
+		family,
+		BLIS_NR,
+		macro_kernel_fp,
+		post_node
 	);
 	post_node = gemm_cntl_bp_bu;
 
@@ -121,7 +122,7 @@ cntl_t* bli_gemmbp_cntl_create
 	}
 
 	// Create a node for partitioning the m dimension by MC.
-	if ( schema_b != BLIS_NOT_PACKED )
+	if ( schema_a != BLIS_NOT_PACKED )
 	{
 		cntl_t* gemm_cntl_op_bp = bli_gemm_cntl_create_node
 		(
@@ -153,7 +154,7 @@ cntl_t* bli_gemmbp_cntl_create
 		post_node = gemm_cntl_packb;
 	}
 
-	if ( schema_a != BLIS_NOT_PACKED || schema_b != BLIS_NOT_PACKED )
+	if ( !unpacked_ab )
 	{
 		// Create a node for partitioning the k dimension by KC.
 		cntl_t* gemm_cntl_mm_op = bli_gemm_cntl_create_node
@@ -167,7 +168,7 @@ cntl_t* bli_gemmbp_cntl_create
 		post_node = gemm_cntl_mm_op;
 	}
 
-	if ( schema_a != BLIS_NOT_PACKED )
+	if ( schema_b != BLIS_NOT_PACKED )
 	{
 		// Create a node for partitioning the n dimension by NC.
 		cntl_t* gemm_cntl_vl_mm = bli_gemm_cntl_create_node

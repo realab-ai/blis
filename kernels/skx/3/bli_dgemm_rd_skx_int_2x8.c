@@ -36,34 +36,25 @@
 #include <immintrin.h>
 #include "bli_avx512_intrin_macros.h"
 
-#define SKX_MR 3
+#define SKX_MR 2
 #define SKX_NR 8
+#define SKX_KA 8
 
 // --------------------------------------------------------------------
 // Update C
 // --------------------------------------------------------------------
 #define UPDATE_C_ROW(midx, n_unroll, n_mask, co, ldc, s_c) \
 { \
-	preduceadd_8x8d(zmm[c_regs[0*3+midx]], \
-			        zmm[c_regs[1*3+midx]], \
-			        zmm[c_regs[2*3+midx]], \
-			        zmm[c_regs[3*3+midx]], \
-			        zmm[c_regs[4*3+midx]], \
-			        zmm[c_regs[5*3+midx]], \
-			        zmm[c_regs[6*3+midx]], \
-			        zmm[c_regs[7*3+midx]], \
+	preduceadd_8x8d(zmm[c_regs[0*2+midx]], zmm[c_regs[1*2+midx]], \
+			        zmm[c_regs[2*2+midx]], zmm[c_regs[3*2+midx]], \
+			        zmm[c_regs[4*2+midx]], zmm[c_regs[5*2+midx]], \
+			        zmm[c_regs[6*2+midx]], zmm[c_regs[7*2+midx]], \
 			        zmm[c_store_regs[midx]]); \
-	zmm[c_regs[0*3+midx]] = pzero_8d;  \
-	zmm[c_regs[1*3+midx]] = pzero_8d;  \
-	zmm[c_regs[2*3+midx]] = pzero_8d;  \
-	zmm[c_regs[3*3+midx]] = pzero_8d;  \
-	zmm[c_regs[4*3+midx]] = pzero_8d;  \
-	zmm[c_regs[5*3+midx]] = pzero_8d;  \
-	zmm[c_regs[6*3+midx]] = pzero_8d;  \
-	zmm[c_regs[7*3+midx]] = pzero_8d;  \
-	if (!is_alpha1) { \
-		zmm[c_store_regs[midx]] = pmul_8d(zmm[c_store_regs[midx]], zmm[alpha_load_reg]); \
-	} \
+	zmm[c_regs[0*2+midx]] = pzero_8d;  zmm[c_regs[1*2+midx]] = pzero_8d;  \
+	zmm[c_regs[2*2+midx]] = pzero_8d;  zmm[c_regs[3*2+midx]] = pzero_8d;  \
+	zmm[c_regs[4*2+midx]] = pzero_8d;  zmm[c_regs[5*2+midx]] = pzero_8d;  \
+	zmm[c_regs[6*2+midx]] = pzero_8d;  zmm[c_regs[7*2+midx]] = pzero_8d;  \
+	zmm[c_store_regs[midx]] = pmul_8d(zmm[c_store_regs[midx]], zmm[alpha_load_reg]); \
 	if (!is_beta0) { \
 		pmzloadu_8d(co, zmm[c_load_regs[midx]], n_mask); \
 		zmm[c_store_regs[midx]] = pmfmadd_8d( zmm[beta_load_reg], \
@@ -82,49 +73,40 @@
 
 #define UPDATE_C(m_unroll, n_unroll, n_mask, co) \
 { \
-	zmm[alpha_load_reg] = pload1_8d(alpha); \
-	zmm[ beta_load_reg] = pload1_8d(beta); \
-	m_packloop(SKX_MR, m_unroll, UPDATE_C_ROW, n_unroll, n_mask, co, rs_c, cs_c); \
+	if ( 0 < m_unroll ) UPDATE_C_ROW( 0, n_unroll, n_mask, co, rs_c, cs_c ); \
+	if ( 1 < m_unroll ) UPDATE_C_ROW( 1, n_unroll, n_mask, co, rs_c, cs_c ); \
 	co -= m_unroll*rs_c*BLIS_SIZEOF_D; \
 }
 
 // --------------------------------------------------------------------
 // Accumulate C
 // --------------------------------------------------------------------
-#define ACCUMULATE_C(midx, nidx) \
+#define CD_KER_UMUN( nidx, midx, k_mask, bo ) \
 { \
-	zmm[c_regs[nidx*3+midx]] = pfmadd_8d(   zmm[a_regs[midx]], \
-			                                zmm[b_regs[0]], \
-			                                zmm[c_regs[nidx*3+midx]]); \
-}
-#define CD_KER_UN(nidx, m_unroll, k_mask, bo) \
-{ \
-	pmzloadu_8d(bo+nidx*cs_b*BLIS_SIZEOF_D, zmm[b_regs[0]], k_mask); \
-	m_packloop(SKX_MR, m_unroll, ACCUMULATE_C, nidx); \
+	pmzloadu_8d( bo+nidx*cs_b*BLIS_SIZEOF_D, zmm[b_regs[nidx]], k_mask ); \
+	zmm[c_regs[nidx*2+midx]] = pfmadd_8d( zmm[a_regs[midx]], \
+			                              zmm[b_regs[nidx]], \
+				                          zmm[c_regs[nidx*2+midx]]); \
 }
 
-#define VLOAD_A(midx, mask, ao) \
+#define CD_KER_UM( midx, n_unroll, k_mask, ao, bo ) \
 { \
-	pmzloadu_8d(ao+ midx*rs_a*BLIS_SIZEOF_D, zmm[a_regs[midx]], mask); \
+	pmzloadu_8d( ao+midx*rs_a*BLIS_SIZEOF_D, zmm[a_regs[midx]], k_mask ); \
+	n_packloop( SKX_NR, n_unroll, CD_KER_UMUN, midx, k_mask, bo); \
 }
 #define CD_KER_PK(k_unroll, m_unroll, n_unroll, ao, bo) \
 { \
 	__mmask8 k_mask = edge_mask8(k_unroll); \
-	m_packloop(SKX_MR, m_unroll, VLOAD_A, k_mask, ao); \
-	n_packloop(SKX_NR, n_unroll, CD_KER_UN, m_unroll, k_mask, bo); \
+	if ( 0 < m_unroll ) CD_KER_UM( 0, n_unroll, k_mask, ao, bo ); \
+	if ( 1 < m_unroll ) CD_KER_UM( 1, n_unroll, k_mask, ao, bo ); \
 	ao += k_unroll*cs_a*BLIS_SIZEOF_D; \
 	bo += k_unroll*rs_b*BLIS_SIZEOF_D; \
-}
-
-#define KLOOP(m_unroll, n_unroll, ao, bo, co) \
-{ \
-	k_alignloop(k, CD_KER_PK, m_unroll, n_unroll, ao, bo); \
 }
 
 #define EDGE_B(n_unroll, m_unroll, ao, bo, co) \
 { \
 	__mmask8 n_mask = edge_mask8(n_unroll); \
-	KLOOP(m_unroll, n_unroll, ao, bo, co); \
+	k_alignedges( SKX_KA, k, CD_KER_PK, m_unroll, n_unroll, ao, bo ); \
 	UPDATE_C(m_unroll, n_unroll, n_mask, co); \
 	ao -= k*cs_a*BLIS_SIZEOF_D; \
 	bo -= k*rs_b*BLIS_SIZEOF_D; \
@@ -135,9 +117,10 @@
 #define EDGE_A(m_unroll, ao, bo, co) \
 { \
 	n_powedges(SKX_NR, n, EDGE_B, m_unroll, ao, bo, co); \
+	bo -= n*cs_b*BLIS_SIZEOF_D; \
+	co -= n*cs_c*BLIS_SIZEOF_D; \
 	ao += m_unroll*rs_a*BLIS_SIZEOF_D; \
-	bo  = b; \
-	co += m_unroll*rs_c*BLIS_SIZEOF_D - n*cs_c*BLIS_SIZEOF_D; \
+	co += m_unroll*rs_c*BLIS_SIZEOF_D; \
 }
 
 #define ZERO_ZMMS(midx, from) \
@@ -164,10 +147,10 @@
 
 // --------------------------------------------------------------------
 // Compute double SUPMM row-dot (rd) kernel with max unroll support of:
-//     max_a_unroll: 3, 2, 1
+//     max_a_unroll: 2, 1
 //     max_b_unroll: 8, 4, 2, 1
 // --------------------------------------------------------------------
-void bli_dgemmsup_rd_skx_intrin_24x8
+void bli_dgemmsup_rd_skx_int_2x8
 	 (
 			conj_t      conja,
 			conj_t      conjb,
@@ -196,20 +179,21 @@ void bli_dgemmsup_rd_skx_intrin_24x8
 	const int64_t rs_b = rs_b0;
 	const int64_t cs_b = cs_b0;
 
-	const bool is_alpha1     = *((double *)alpha)==1? true: false;
 	const bool is_beta0      = *((double *)beta )==0? true: false;
-	const int a_regs[]       = { 0,  1,  2};
-	const int b_regs[]       = { 3,  4};
-	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
-			                    12, 20, 28, 13, 21, 29, 14, 22, 30, 15, 23, 31};
-	const int c_load_regs[]  = { 0,  1,  2};
-	const int c_store_regs[] = { 5,  6,  7};
-	const int alpha_load_reg = 3;
-	const int beta_load_reg  = 4;
+	const int a_regs[]       = {  0,  1 };
+	const int b_regs[]       = {  8,  9, 10, 11, 12, 13, 14, 15 };
+	const int c_regs[]       = { 16, 17, 18, 19, 20, 21, 22, 23,
+			                     24, 25, 26, 27, 28, 29, 30, 31 };
+	const int c_load_regs[]  = {  0,  1 };
+	const int c_store_regs[] = {  2,  3 };
+	const int alpha_load_reg = 4;
+	const int beta_load_reg  = 5;
 
 	Packet8d zmm[32];
-	m_packloop(24, 24, ZERO_ZMMS, 8);
-	
+	m_packloop( 16, 16, ZERO_ZMMS, 16 );
+	zmm[alpha_load_reg] = pload1_8d(alpha);
+	zmm[ beta_load_reg] = pload1_8d(beta);
+
 	const void *ao = a;
 	const void *bo = b;
 		  void *co = c;

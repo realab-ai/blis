@@ -178,8 +178,12 @@ BLIS_INLINE bool bli_cntx_l3_supa_thresh_is_met( num_t dt, dim_t m, dim_t n, dim
 {
 	dim_t mt = bli_cntx_get_blksz_def_dt( dt, BLIS_MT, cntx );
 	dim_t kt = bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx );
+#ifdef BLIS_ENABLE_FIP
 	dim_t nr = bli_cntx_get_blksz_def_dt( dt, BLIS_NR, cntx );
-	return ( m*k <= mt*kt || n <= 4*nr );
+	return ( m*k <= mt*kt || n <= 4*nr ) ? true : false;
+#else
+	return ( m  <= mt || k <= kt ) ? true : false;
+#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -188,8 +192,12 @@ BLIS_INLINE bool bli_cntx_l3_supb_thresh_is_met( num_t dt, dim_t m, dim_t n, dim
 {
 	dim_t nt = bli_cntx_get_blksz_def_dt( dt, BLIS_NT, cntx );
 	dim_t kt = bli_cntx_get_blksz_def_dt( dt, BLIS_KT, cntx );
-	dim_t mc = bli_cntx_get_blksz_def_dt( dt, BLIS_MC, cntx  );
-	return ( n*k <= nt*kt || m <= mc );
+#ifdef BLIS_ENABLE_FIP
+	dim_t mc = bli_cntx_get_blksz_def_dt( dt, BLIS_MC, cntx );
+	return ( n*k <= nt*kt || m <= mc ) ? true : false;
+#else
+	return ( n <= nt || k <= kt ) ? true : false;
+#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -197,7 +205,7 @@ BLIS_INLINE bool bli_cntx_l3_supb_thresh_is_met( num_t dt, dim_t m, dim_t n, dim
 BLIS_INLINE bool bli_cntx_l3_sup_thresh_is_met( num_t dt, dim_t m, dim_t n, dim_t k, const cntx_t* cntx )
 {
 	return ( bli_cntx_l3_supa_thresh_is_met( dt, m, n, k, cntx ) &&
-			 bli_cntx_l3_supb_thresh_is_met( dt, m, n, k, cntx ) );
+			 bli_cntx_l3_supb_thresh_is_met( dt, m, n, k, cntx ) ) ? true : false;
 }
 
 // -----------------------------------------------------------------------------
