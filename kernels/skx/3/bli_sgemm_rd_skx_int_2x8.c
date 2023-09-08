@@ -36,7 +36,7 @@
 #include <immintrin.h>
 #include "bli_avx512_intrin_macros.h"
 
-#define SKX_MR 2
+#define SKX_MR 48
 #define SKX_NR 8
 #define SKX_KA 16
 
@@ -199,10 +199,11 @@ void bli_sgemmsup_rd_skx_int_2x8
 		  void *co = c;
 	if (bli_info_get_enable_diagnosis())
 	{
-		printf("KER m    n    k alpha beta cs_c rs_c cs_a rs_a cs_b rs_b\n");
-		printf("%5d%5d%5d%5.1f%5.1f%5d%5d%5d%5d%5d%5d\n", 
+		printf("URD m    n    k alpha beta cs_c rs_c cs_a rs_a cs_b rs_b\n");
+		printf("%s%s%3d%5d%5d%5.1f%5.1f%5d%5d%5d%5d%5d%5d\n", 
+				(cs_a==SKX_MR && rs_a==1)?" ":"A", (rs_b==SKX_NR && cs_b==1)?" ":"B",
 			    (int)m, (int)n, (int)k, *((float *)alpha), *((float *)beta), 
 			    (int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges(SKX_MR, m, EDGE_A, ao, bo, co);
+	m_powedges( 2, m, EDGE_A, ao, bo, co );
 }

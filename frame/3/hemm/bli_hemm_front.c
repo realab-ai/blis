@@ -133,9 +133,6 @@ void bli_hemm_front
 	}
 #endif
 
-	// Set the pack schemas within the objects.
-	bli_l3_set_schemas( BLIS_HEMM, &a_local, &b_local, &c_local, cntx );
-
 	// Parse and interpret the contents of the rntm_t object to properly
 	// set the ways of parallelism for each loop, and then make any
 	// additional modifications necessary for the current operation.
@@ -148,6 +145,9 @@ void bli_hemm_front
 	  bli_obj_width( &a_local ),
 	  rntm
 	);
+	
+	// Set the pack schemas within the objects.
+	bli_l3_set_schemas( BLIS_HEMM, &a_local, &b_local, &c_local, cntx, rntm );
 
 	// Invoke the internal back-end.
 	bli_l3_thread_decorator

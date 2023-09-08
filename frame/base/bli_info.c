@@ -212,9 +212,9 @@ gint_t bli_info_get_enable_diagnosis( void )
 	return 0;
 #endif
 }
-gint_t bli_info_get_enable_fip( void )
+gint_t bli_info_get_enable_fup( void )
 {
-#ifdef BLIS_ENABLE_FIP
+#ifdef BLIS_ENABLE_FUP
 	return 1;
 #else
 	return 0;

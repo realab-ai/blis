@@ -78,30 +78,20 @@ void bli_gemm_front
 	bli_obj_reset_origin( &b_local );
 	bli_obj_reset_origin( &c_local );
 
-	const num_t dt                = bli_obj_dt( &c_local );
-	const dim_t m                 = bli_obj_length_after_trans( &c_local );
-	const dim_t n                 = bli_obj_width_after_trans( &c_local );
-	const dim_t k                 = bli_obj_width_after_trans( &a_local );
-	const stor3_t stor_id         = bli_obj_stor3_from_strides( &c_local, &a_local, &b_local );
+	// An optimization: If C is stored by rows and the micro-kernel prefers
+	// contiguous columns, or if C is stored by columns and the micro-kernel
+	// prefers contiguous rows, transpose the entire operation to allow the
+	// micro-kernel to access elements of C in its preferred manner.
+	const num_t dt                = bli_obj_dt( &c_local  );
+	const stor3_t stor_id         = bli_obj_stor3_from_strides( &c_local, &a_local, &b_local  );
 	const bool is_rrr_rrc_rcr_crr = ( stor_id == BLIS_RRR ||
-				                      stor_id == BLIS_RRC ||
+			                          stor_id == BLIS_RRC ||
 									  stor_id == BLIS_RCR ||
 									  stor_id == BLIS_CRR );
 	bool is_primary               = true;
 
-	if ( bli_cntx_l3_sup_thresh_is_met( dt, m, n, k, cntx ) &&
-		 bli_info_get_enable_fip() )
-	{
-		is_primary = ( is_rrr_rrc_rcr_crr == bli_cntx_ukr_prefers_rows_dt( dt, bli_stor3_ukr( stor_id ), cntx ) );
-	}
-	else
-	{
-		// An optimization: If C is stored by rows and the micro-kernel prefers
-		// contiguous columns, or if C is stored by columns and the micro-kernel
-		// prefers contiguous rows, transpose the entire operation to allow the
-		// micro-kernel to access elements of C in its preferred manner.
-		is_primary = ( !bli_cntx_dislikes_storage_of( &c_local, BLIS_GEMM_VIR_UKR, cntx ) );
-	}
+	is_primary = ( is_rrr_rrc_rcr_crr == bli_cntx_ukr_prefers_rows_dt( dt, bli_stor3_ukr( stor_id ), cntx ) );
+
 	if ( !is_primary )
 	{
 		bli_obj_swap( &a_local, &b_local );
@@ -110,9 +100,6 @@ void bli_gemm_front
 		bli_obj_induce_trans( &b_local );
 		bli_obj_induce_trans( &c_local );
 	}
-
-	// Set the pack schemas within the objects.
-	bli_l3_set_schemas( BLIS_GEMM, &a_local, &b_local, &c_local, cntx );
 
 #ifdef BLIS_ENABLE_GEMM_MD
 	cntx_t cntx_local;
@@ -156,101 +143,26 @@ void bli_gemm_front
 	// Parse and interpret the contents of the rntm_t object to properly
 	// set the ways of parallelism for each loop, and then make any
 	// additional modifications necessary for the current operation.
-	bli_rntm_set_ways_for_op
-	(
-	  BLIS_GEMM,
-	  BLIS_LEFT, // ignored for gemm/hemm/symm
-	  bli_obj_length( &c_local ),
-	  bli_obj_width( &c_local ),
-	  bli_obj_width( &a_local ),
-	  rntm
-	);
+	if ( bli_info_get_enable_fup() )
+		bli_rntm_set_nt_for_size ( bli_obj_length( &c_local ),
+				                   bli_obj_width( &c_local ),
+								   bli_obj_width( &a_local ),
+								   bli_obj_dt( &c_local ),
+								   cntx,
+								   rntm );
+
+	bli_rntm_set_ways_for_op( BLIS_GEMM,
+			                  BLIS_LEFT, // ignored for gemm/hemm/symm
+							  bli_obj_length( &c_local ),
+							  bli_obj_width( &c_local ),
+							  bli_obj_width( &a_local ),
+							  rntm );
+	
+	// Set the pack schemas within the objects.
+	bli_l3_set_schemas( BLIS_GEMM, &a_local, &b_local, &c_local, cntx, rntm );
 
 	      obj_t* cp    = &c_local;
 	const obj_t* betap = beta;
-
-#ifdef BLIS_ENABLE_GEMM_MD
-#ifdef BLIS_ENABLE_GEMM_MD_EXTRA_MEM
-	// If any of the following conditions are met, create a temporary matrix
-	// conformal to C into which we will accumulate the matrix product:
-	// - the storage precision of C differs from the computation precision;
-	// - the domains are mixed as crr;
-	// - the storage format of C does not match the preferred orientation
-	//   of the ccr or crc cases.
-	// Then, after the computation is complete, this matrix will be copied
-	// or accumulated back to C.
-	const bool is_ccr_mismatch =
-	             ( bli_gemm_md_is_ccr( &a_local, &b_local, &c_local ) &&
-                   !bli_obj_is_col_stored( &c_local ) );
-	const bool is_crc_mismatch =
-	             ( bli_gemm_md_is_crc( &a_local, &b_local, &c_local ) &&
-                   !bli_obj_is_row_stored( &c_local ) );
-
-	obj_t ct;
-	bool  use_ct = FALSE;
-
-	// FGVZ: Consider adding another guard here that only creates and uses a
-	// temporary matrix for accumulation if k < c * kc, where c is some small
-	// constant like 2. And don't forget to use the same conditional for the
-	// castm() and free() at the end.
-	if (
-	     bli_obj_prec( &c_local ) != bli_obj_comp_prec( &c_local ) ||
-	     bli_gemm_md_is_crr( &a_local, &b_local, &c_local ) ||
-	     is_ccr_mismatch ||
-	     is_crc_mismatch
-	   )
-	{
-		use_ct = TRUE;
-	}
-
-	// If we need a temporary matrix conformal to C for whatever reason,
-	// we create it and prepare to use it now.
-	if ( use_ct )
-	{
-		const dim_t m     = bli_obj_length( &c_local );
-		const dim_t n     = bli_obj_width( &c_local );
-		      inc_t rs    = bli_obj_row_stride( &c_local );
-		      inc_t cs    = bli_obj_col_stride( &c_local );
-
-		      num_t dt_ct = bli_obj_domain( &c_local ) |
-		                    bli_obj_comp_prec( &c_local );
-
-		// When performing the crr case, accumulate to a contiguously-stored
-		// real matrix so we do not have to repeatedly update C with general
-		// stride.
-		if ( bli_gemm_md_is_crr( &a_local, &b_local, &c_local ) )
-			dt_ct = BLIS_REAL | bli_obj_comp_prec( &c_local );
-
-		// When performing the mismatched ccr or crc cases, now is the time
-		// to specify the appropriate storage so the gemm_md_c2r_ref() virtual
-		// microkernel can output directly to C (instead of using a temporary
-		// microtile).
-		if      ( is_ccr_mismatch ) { rs = 1; cs = m; }
-		else if ( is_crc_mismatch ) { rs = n; cs = 1; }
-
-		bli_obj_create( dt_ct, m, n, rs, cs, &ct );
-
-		const num_t dt_exec = bli_obj_exec_dt( &c_local );
-		const num_t dt_comp = bli_obj_comp_dt( &c_local );
-
-		bli_obj_set_target_dt( dt_ct, &ct );
-		bli_obj_set_exec_dt( dt_exec, &ct );
-		bli_obj_set_comp_dt( dt_comp, &ct );
-
-		// A naive approach would cast C to the comptuation datatype,
-		// compute with beta, and then cast the result back to the
-		// user-provided output matrix. However, we employ a different
-		// approach that halves the number of memops on C (or its
-		// typecast temporary) by writing the A*B product directly to
-		// temporary storage, and then using xpbym to scale the
-		// output matrix by beta and accumulate/cast the A*B product.
-		//bli_castm( &c_local, &ct );
-		betap = &BLIS_ZERO;
-
-		cp = &ct;
-	}
-#endif
-#endif
 
 	// Invoke the internal back-end via the thread handler.
 	bli_l3_thread_decorator
@@ -270,23 +182,5 @@ void bli_gemm_front
 	{
 		bli_rntm_print(rntm);
 	}
-
-#ifdef BLIS_ENABLE_GEMM_MD
-#ifdef BLIS_ENABLE_GEMM_MD_EXTRA_MEM
-	// If we created a temporary matrix conformal to C for whatever reason,
-	// we copy/accumulate the result back to C and then release the object.
-	if ( use_ct )
-	{
-		obj_t beta_local;
-
-		bli_obj_scalar_detach( &c_local, &beta_local );
-
-		//bli_castnzm( &ct, &c_local );
-		bli_xpbym( &ct, &beta_local, &c_local );
-
-		bli_obj_free( &ct );
-	}
-#endif
-#endif
 }
 

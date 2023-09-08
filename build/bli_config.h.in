@@ -172,10 +172,10 @@
 #define BLIS_DISABLE_SUP_HANDLING
 #endif
 
-#if @enable_fip@
-#define BLIS_ENABLE_FIP
+#if @enable_fup@
+#define BLIS_ENABLE_FUP
 #else
-#define BLIS_DISABLE_FIP
+#define BLIS_DISABLE_FUP
 #endif
 
 #if @enable_memkind@

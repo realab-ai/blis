@@ -39,6 +39,7 @@
 #define SKX_MR 24
 #define SKX_NR 8
 #define A_L1_PREFETCH_DIST 4           // in units of k iterations
+#define B_L1_PREFETCH_DIST 4
 
 // --------------------------------------------------------------------
 // Update C
@@ -165,8 +166,6 @@
 	zmm[c_regs[nidx*3+mvidx]] = pfmadd_8d( zmm[a_regs[mvidx*k_align+kidx]], \
 			                               zmm[b_regs[kidx]], \
 			                               zmm[c_regs[nidx*3+mvidx]]); \
-	if ( is_prefetch && 1==rs_a && 3==nidx ) \
-		prefetch_8d_at( A_L1_PREFETCH_DIST+kidx, ao+mvidx*8*BLIS_SIZEOF_D, cs_a, _MM_HINT_T0 ); \
 }
 #define CV_KER_UN(nidx, kidx, m_vecs, k_align, ao, bo ) \
 { \
@@ -176,35 +175,39 @@
 	if ( 3 <= m_vecs ) ACCUMULATE_C ( 2, nidx, kidx, k_align, ao ); \
 }
 
-#define VLOAD_A(mvidx, kidx, mask, k_align, ao ) \
+#define VLOAD_A(mvidx, kidx, mask, k_align, ao, is_prefetch ) \
 { \
 	if ( 1==rs_a ) { \
 		pmzloadu_8d(ao+(kidx*cs_a+mvidx*8)*BLIS_SIZEOF_D, zmm[a_regs[mvidx*k_align+kidx]], mask); \
+		if ( is_prefetch && 1==rs_a ) \
+			prefetch_8d_at( A_L1_PREFETCH_DIST+kidx, ao+mvidx*8*BLIS_SIZEOF_D, cs_a, _MM_HINT_T0 ); \
 	} \
 	else { \
 		pmzloads_8d(ao+(kidx*cs_a+mvidx*8*rs_a)*BLIS_SIZEOF_D, zmm[a_regs[mvidx*k_align+kidx]], rs_a, mask); \
 	} \
 }
-#define CV_KER_UK( kidx, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo) \
+#define CV_KER_UK( kidx, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo, is_prefetch ) \
 { \
-	if ( 1 <= m_vecs ) VLOAD_A ( 0, kidx, m_mask, k_align, ao ); \
-	if ( 2 <= m_vecs ) VLOAD_A ( 1, kidx, m_mask, k_align, ao ); \
-	if ( 3 <= m_vecs ) VLOAD_A ( 2, kidx, m_mask, k_align, ao ); \
+	if ( 1 <= m_vecs ) VLOAD_A ( 0, kidx, m_mask, k_align, ao, is_prefetch ); \
+	if ( 2 <= m_vecs ) VLOAD_A ( 1, kidx, m_mask, k_align, ao, is_prefetch ); \
+	if ( 3 <= m_vecs ) VLOAD_A ( 2, kidx, m_mask, k_align, ao, is_prefetch ); \
 	n_packloop( SKX_NR, n_unroll, CV_KER_UN, kidx, m_vecs, k_align, ao, bo ); \
+	if( is_prefetch && 1==cs_b ) \
+		prefetch_16f_at( B_L1_PREFETCH_DIST+kidx, bo, rs_b, _MM_HINT_T0 ); \
 }
 
-#define CV_KER_PK( k_unroll, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo ) \
+#define CV_KER_PK( k_unroll, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo, is_prefetch ) \
 { \
-	if ( 1 <= k_unroll ) CV_KER_UK( 0, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo); \
-	if ( 2 <= k_unroll ) CV_KER_UK( 1, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo); \
+	if ( 1 <= k_unroll ) CV_KER_UK( 0, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo, is_prefetch ); \
+	if ( 2 <= k_unroll ) CV_KER_UK( 1, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo, is_prefetch ); \
 	ao += k_unroll*cs_a*BLIS_SIZEOF_D; \
 	bo += k_unroll*rs_b*BLIS_SIZEOF_D; \
 }
 
-#define EDGE_B(n_unroll, m_unroll, m_vecs, m_mask, k_align, ao, bo, co) \
+#define EDGE_B(n_unroll, m_unroll, m_vecs, m_mask, k_align, ao, bo, co, is_prefetch) \
 { \
 	__mmask8 n_mask = edge_mask8(n_unroll); \
-	k_alignedges( k_align, k, CV_KER_PK, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo ); \
+	k_alignedges( k_align, k, CV_KER_PK, m_unroll, m_vecs, m_mask, n_unroll, n_mask, k_align, ao, bo, is_prefetch ); \
 	UPDATE_C( m_unroll, m_vecs, m_mask, n_unroll, n_mask, co ); \
 	ao -= k*cs_a*BLIS_SIZEOF_D; \
 	bo -= k*rs_b*BLIS_SIZEOF_D; \
@@ -212,18 +215,18 @@
 	co += n_unroll*cs_c*BLIS_SIZEOF_D; \
 }
 
-#define EDGE_A(m_unroll, k_align, ao, bo, co) \
+#define EDGE_A(m_unroll, k_align, ao, bo, co, is_prefetch) \
 { \
 	int m_vecs = div_up(m_unroll, 8); \
 	__mmask8 m_mask = edge_mask8(m_unroll); \
-	if (is_prefetch && 1==rs_c) { \
+	if ( is_a_packed && 1==rs_c ) { \
 		if ( 1 <= m_vecs ) prefetch_x8d_at ( 0, 8, co, cs_c, 8, _MM_HINT_T0 ); \
 		if ( 2 <= m_vecs ) prefetch_x8d_at ( 1, 8, co, cs_c, 8, _MM_HINT_T0 ); \
 		if ( 3 <= m_vecs ) prefetch_x8d_at ( 2, 8, co, cs_c, 8, _MM_HINT_T0 ); \
 	} \
-	if (is_prefetch && 1==cs_c) \
+	if ( is_prefetch && 1==cs_c ) \
 		m_packloop( SKX_MR, m_unroll, prefetch_8d_at, co, rs_c, _MM_HINT_T0 ); \
-	n_powedges(SKX_NR, n, EDGE_B, m_unroll, m_vecs, m_mask, k_align, ao, bo, co); \
+	n_powedges(SKX_NR, n, EDGE_B, m_unroll, m_vecs, m_mask, k_align, ao, bo, co, is_prefetch); \
 	ao += m_unroll*rs_a*BLIS_SIZEOF_D; \
 	bo -= n*cs_b*BLIS_SIZEOF_D; \
 	co += m_unroll*rs_c*BLIS_SIZEOF_D - n*cs_c*BLIS_SIZEOF_D; \
@@ -287,7 +290,8 @@ void bli_dgemm_cv_skx_int_24x8
 	const int64_t cs_b = 1;
 
 	const bool is_beta0      = *((double *)beta )==0? true: false;
-	const bool is_prefetch   = true;
+	const bool is_a_packed   = true;
+	const bool is_b_packed   = true;
 	const int a_regs[]       = { 0,  1,  2,  3,  4,  5 };
 	const int b_regs[]       = { 6,  7 };
 	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
@@ -304,12 +308,13 @@ void bli_dgemm_cv_skx_int_24x8
 	void *co = c;
 	if (bli_info_get_enable_diagnosis())
 	{
-		printf("KER m    n    k alpha beta cs_c rs_c cs_a rs_a cs_b rs_b\n");
-		printf("%5d%5d%5d%5.1f%5.1f%5d%5d%5d%5d%5d%5d\n", 
+		printf("PCV m    n    k alpha beta cs_c rs_c cs_a rs_a cs_b rs_b\n");
+		printf("%s%s%3d%5d%5d%5.1f%5.1f%5d%5d%5d%5d%5d%5d\n", 
+				is_a_packed ?" ":"A", is_b_packed?" ":"B",
 				(int)m, (int)n, (int)k, *((double *)alpha), *((double *)beta), 
 				(int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges(SKX_MR, m, EDGE_A, 2, ao, bo, co);
+	m_powedges(SKX_MR, m, EDGE_A, 1, ao, bo, co, true);
 }
 
 // --------------------------------------------------------------------
@@ -346,8 +351,9 @@ void bli_dgemmsup_cv_skx_int_24x8
 	const int64_t rs_b = rs_b0;
 	const int64_t cs_b = cs_b0;
 
-	const bool is_beta0      = *((double *)beta )==0? true: false;
-	const bool is_prefetch   = false;
+	const bool is_beta0      = *((double *)beta )==0 ? true : false;
+	const bool is_a_packed   = (cs_a==SKX_MR && rs_a==1) ? true : false;
+	const bool is_b_packed   = (rs_b==SKX_NR && cs_b==1) ? true : false;
 	const int a_regs[]       = { 0,  1,  2,  3,  4,  5 };
 	const int b_regs[]       = { 6,  7};
 	const int c_regs[]       = { 8, 16, 24,  9, 17, 25, 10, 18, 26, 11, 19, 27, 
@@ -364,11 +370,16 @@ void bli_dgemmsup_cv_skx_int_24x8
 		  void *co = c;
 	if(bli_info_get_enable_diagnosis())
 	{
-		printf("KER m    n    k alpha beta cs_c rs_c cs_a rs_a cs_b rs_b\n");
-		printf("%5d%5d%5d%5.1f%5.1f%5d%5d%5d%5d%5d%5d\n", 
+		printf("UCV m    n    k alpha beta cs_c rs_c cs_a rs_a cs_b rs_b\n");
+		printf("%s%s%3d%5d%5d%5.1f%5.1f%5d%5d%5d%5d%5d%5d\n", 
+				is_a_packed ?" ":"A", is_b_packed?" ":"B",
 				(int)m, (int)n, (int)k, *((double *)alpha), *((double *)beta), 
 				(int)cs_c, (int)rs_c, (int)cs_a, (int)rs_a, (int)cs_b, (int)rs_b);
 	}
-	m_powedges(SKX_MR, m, EDGE_A, 1, ao, bo, co);
+	if ( is_a_packed )
+		m_powedges(SKX_MR, m, EDGE_A, 1, ao, bo, co, true);
+	else
+		m_powedges(SKX_MR, m, EDGE_A, 1, ao, bo, co, false);
+
 }
 

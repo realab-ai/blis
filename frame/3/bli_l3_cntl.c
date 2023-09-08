@@ -46,7 +46,8 @@ void bli_l3_cntl_create_if
        const obj_t*   c,
              pool_t*  pool,
        const cntl_t*  cntl_orig,
-             cntl_t** cntl_use
+             cntl_t** cntl_use,
+	   const rntm_t*  rntm
      )
 {
 	// If the control tree pointer is NULL, we construct a default
@@ -63,7 +64,8 @@ void bli_l3_cntl_create_if
 			  family,
 			  schema_a,
 			  schema_b,
-			  bli_obj_ker_fn( c )
+			  bli_obj_ker_fn( c ),
+			  rntm
 			);
 		}
 		else // if ( family == BLIS_TRSM )

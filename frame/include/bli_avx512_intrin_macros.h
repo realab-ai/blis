@@ -179,101 +179,112 @@ typedef const char * SsePrefetchPtrType;
 
 // strided load
 #define ploads_16f(from, to, stride) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = _mm512_set_epi32( 15, 14, 13, 12, 11, 10, 9, 8, \
 			                                         7,  6,  5,  4,  3,  2, 1, 0 ); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_i32gather_ps(indices, from, 4); \
-}
+} while( 0 )
+
 #define ploads_8d(from, to, stride) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32(stride); \
 	Packet8i stride_multiplier = _mm256_set_epi32( 7, 6, 5, 4, 3, 2, 1, 0 ); \
 	Packet8i indices = _mm256_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_i32gather_pd( indices, from, 8 ); \
-}
+} while( 0 )
+
 #define ploads_16i(from, to, stride) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = _mm512_set_epi32( 15, 14, 13, 12, 11, 10, 9, 8, \
 			                                         7,  6,  5,  4,  3,  2, 1, 0 ); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_i32gather_epi32(indices, from, 4); \
-}
+} while( 0 )
+
 #define ploads_8l(from, to, stride) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32(stride); \
 	Packet8i stride_multiplier = _mm256_set_epi32( 7, 6, 5, 4, 3, 2, 1, 0 ); \
 	Packet8i indices = _mm256_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_i32gather_epi64( indices, from, 8 ); \
-}
+} while( 0 )
+
 // stride-masked load
 #define pmloads_16f(from, to, stride, mask) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = _mm512_set_epi32( 15, 14, 13, 12, 11, 10, 9, 8, \
 			                                         7,  6,  5,  4,  3,  2, 1, 0 ); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_mask_i32gather_ps( to, mask, indices, from, 4 ); \
-}
+} while( 0 )
+
 #define pmloads_8d(from, to, stride, mask) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32(stride); \
 	Packet8i stride_multiplier = _mm256_set_epi32( 7, 6, 5, 4, 3, 2, 1, 0 ); \
 	Packet8i indices = _mm256_mullo_epi32( stride_vector, stride_multiplier ); \
 	to = _mm512_mask_i32gather_pd( to, mask, indices, from, 8 ); \
-}
+} while( 0 )
+
 #define pmloads_16i(from, to, stride, mask) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = _mm512_set_epi32( 15, 14, 13, 12, 11, 10, 9, 8, \
 			                                         7,  6,  5,  4,  3,  2, 1, 0 ); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_mask_i32gather_epi32( to, mask, indices, from, 4 ); \
-}
+} while( 0 )
+
 #define pmloads_8l(from, to, stride, mask) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32(stride); \
 	Packet8i stride_multiplier = _mm256_set_epi32( 7, 6, 5, 4, 3, 2, 1, 0 ); \
 	Packet8i indices = _mm256_mullo_epi32( stride_vector, stride_multiplier ); \
 	to = _mm512_mask_i32gather_epi64( to, mask, indices, from, 8 ); \
-}
+} while( 0 )
+
 // stride-mask-zeroed load
 #define pmzloads_16f(from, to, stride, mask) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = _mm512_set_epi32( 15, 14, 13, 12, 11, 10, 9, 8, \
 			                                         7,  6,  5,  4,  3,  2, 1, 0 ); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_setzero_ps(); \
 	to = _mm512_mask_i32gather_ps( to, mask, indices, from, 4 ); \
-}
+} while( 0 )
+
 #define pmzloads_8d(from, to, stride, mask) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32( stride ); \
 	Packet8i stride_multiplier = _mm256_set_epi32( 7, 6, 5, 4, 3, 2, 1, 0 ); \
 	Packet8i indices = _mm256_mullo_epi32( stride_vector, stride_multiplier ); \
 	to = _mm512_setzero_pd(); \
 	to = _mm512_mask_i32gather_pd( to, mask, indices, from, 8 ); \
-}
+} while( 0 )
+
 #define pmzloads_16i(from, to, stride, mask) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = _mm512_set_epi32( 15, 14, 13, 12, 11, 10, 9, 8, \
 			                                         7,  6,  5,  4,  3,  2, 1, 0 ); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	to = _mm512_setzero_epi32(); \
 	to = _mm512_mask_i32gather_epi32( to, mask, indices, from, 4 ); \
-}
+} while( 0 )
+
 #define pmzloads_8l(from, to, stride, mask) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32( stride ); \
 	Packet8i stride_multiplier = _mm256_set_epi32( 7, 6, 5, 4, 3, 2, 1, 0 ); \
 	Packet8i indices = _mm256_mullo_epi32( stride_vector, stride_multiplier ); \
 	to = _mm512_setzero_si512(); \
 	to = _mm512_mask_i32gather_epi64( to, mask, indices, from, 8 ); \
-}
+} while( 0 )
 
 
 // load1
@@ -309,35 +320,38 @@ typedef const char * SsePrefetchPtrType;
 
 // strided (masked) store
 #define pstores_16f(to, from, stride) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = \
 		_mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	_mm512_i32scatter_ps(to, indices, from, 4); \
-}
+} while( 0 )
+
 #define pstores_8d(to, from, stride) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32(stride); \
 	Packet8i stride_multiplier = _mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0); \
 	Packet8i indices = _mm256_mullo_epi32(stride_vector, stride_multiplier); \
 	_mm512_i32scatter_pd(to, indices, from, 8); \
-}
+} while( 0 )
+
 #define pmstores_16f(to, from, stride, mask) \
-{ \
+do { \
 	Packet16i stride_vector = _mm512_set1_epi32(stride); \
 	Packet16i stride_multiplier = \
 		_mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0); \
 	Packet16i indices = _mm512_mullo_epi32(stride_vector, stride_multiplier); \
 	_mm512_mask_i32scatter_ps(to, mask, indices, from, 4); \
-}
+} while( 0 )
+
 #define pmstores_8d(to, from, stride, mask) \
-{ \
+do { \
 	Packet8i stride_vector = _mm256_set1_epi32(stride); \
 	Packet8i stride_multiplier = _mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0); \
 	Packet8i indices = _mm256_mullo_epi32(stride_vector, stride_multiplier); \
 	_mm512_mask_i32scatter_pd(to, mask, indices, from, 8); \
-}
+} while ( 0 )
 
 // --------------------------------------------------------------------
 // Prefetch
@@ -346,16 +360,18 @@ typedef const char * SsePrefetchPtrType;
 
 // prefetch 1 cacheline
 #define prefetch_8d_at(idx, addr, s_i, hint) \
-{ \
+do { \
 	prefetch(addr + (idx)*s_i*8, hint); \
-}
+} while( 0 )
+
 #define prefetch_16f_at(idx, addr, s_i, hint) \
-{ \
+do { \
 	prefetch(addr + (idx)*s_i*16, hint); \
-}
+} while( 0 )
+
 // prefetch 8 cachelines
 #define prefetch_8x8d(addr, ld_x, hint) \
-{ \
+do { \
 	prefetch(addr + 0*ld_x*8, hint); \
 	prefetch(addr + 1*ld_x*8, hint); \
 	prefetch(addr + 2*ld_x*8, hint); \
@@ -364,9 +380,10 @@ typedef const char * SsePrefetchPtrType;
 	prefetch(addr + 5*ld_x*8, hint); \
 	prefetch(addr + 6*ld_x*8, hint); \
 	prefetch(addr + 7*ld_x*8, hint); \
-}
+} while( 0 )
+
 #define prefetch_8x16f(addr, ld_x, hint) \
-{ \
+do { \
 	prefetch(addr + 0*ld_x*4, hint); \
 	prefetch(addr + 1*ld_x*4, hint); \
 	prefetch(addr + 2*ld_x*4, hint); \
@@ -375,11 +392,11 @@ typedef const char * SsePrefetchPtrType;
 	prefetch(addr + 5*ld_x*4, hint); \
 	prefetch(addr + 6*ld_x*4, hint); \
 	prefetch(addr + 7*ld_x*4, hint); \
-}
+} while( 0 )
 
 // prefetch x cachelines
 #define prefetch_x8d(x, addr, ld_x, hint) \
-{ \
+do { \
 	int x_i = x; \
 	if (8 < x_i) { \
 		for (; x_i > 8; x_i-=8) { \
@@ -394,13 +411,15 @@ typedef const char * SsePrefetchPtrType;
 			prefetch(addr + (x-x_i)*ld_x*8, hint); \
 		}\
 	} \
-}
-#define prefetch_x8d_at(idx, x, addr, ld_x, s_i, hint) { \
+} while( 0 )
+
+#define prefetch_x8d_at(idx, x, addr, ld_x, s_i, hint) \
+do { \
 	prefetch_x8d(x, addr+(idx)*s_i*8, ld_x, hint); \
-}
+} while( 0 )
 
 #define prefetch_x16f(x, addr, ld_x, hint) \
-{ \
+do { \
 	int x_i = x; \
 	if (8 < x) { \
 		for (; x_i > 8; x_i-=8) { \
@@ -415,16 +434,18 @@ typedef const char * SsePrefetchPtrType;
 			prefetch(addr + (x-x_i)*ld_x*4, hint); \
 		} \
 	} \
-}
-#define prefetch_x16f_at(idx, x, addr, ld_x, s_i, hint) { \
+} while( 0 )
+
+#define prefetch_x16f_at(idx, x, addr, ld_x, s_i, hint) \
+do { \
 	prefetch_x16f(x, addr+(idx)*s_i*4, ld_x, hint); \
-}
+} while( 0 )
 
 // --------------------------------------------------------------------
 // Inner register transpose
 // --------------------------------------------------------------------
 #define ptranspose_8x8d(zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7) \
-{ \
+do { \
 	Packet8d T0 = _mm512_shuffle_pd(zmm0, zmm1, 0x00); \
 	Packet8d T1 = _mm512_shuffle_pd(zmm0, zmm1, 0xFF); \
 	Packet8d T2 = _mm512_shuffle_pd(zmm2, zmm3, 0x00); \
@@ -468,9 +489,10 @@ typedef const char * SsePrefetchPtrType;
 	zmm5 = T5; \
 	zmm6 = T6; \
 	zmm7 = T7; \
-}
+} while( 0 )
+
 #define ptranspose_8x16f(zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7) \
-{ \
+do { \
 	Packet16f T0 = _mm512_unpacklo_ps(zmm0, zmm1); \
 	Packet16f T1 = _mm512_unpackhi_ps(zmm0, zmm1); \
 	Packet16f T2 = _mm512_unpacklo_ps(zmm2, zmm3); \
@@ -506,13 +528,13 @@ typedef const char * SsePrefetchPtrType;
 	zmm5 = _mm512_shuffle_f32x4(T2, T3, 0xDD); \
 	zmm6 = _mm512_shuffle_f32x4(T4, T5, 0xDD); \
 	zmm7 = _mm512_shuffle_f32x4(T6, T7, 0xDD); \
-}
+} while( 0 )
 
 // --------------------------------------------------------------------
 // reduce add
 // --------------------------------------------------------------------
 #define preduceadd_8x8d(zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7, to) \
-{ \
+do { \
 	Packet8d T0 = _mm512_shuffle_pd(zmm0, zmm1, 0x00); \
 	Packet8d T1 = _mm512_shuffle_pd(zmm0, zmm1, 0xFF); \
 	Packet8d T2 = _mm512_shuffle_pd(zmm2, zmm3, 0x00); \
@@ -540,9 +562,10 @@ typedef const char * SsePrefetchPtrType;
 	T0 = _mm512_shuffle_f64x2(zmm0, zmm4, 0x44); \
 	T4 = _mm512_shuffle_f64x2(zmm0, zmm4, 0xEE); \
 	to = _mm512_add_pd(T0, T4); \
-}
+} while( 0 )
+
 #define preduceadd_4x8d(zmm0, zmm1, zmm2, zmm3, to) \
-{ \
+do { \
 	Packet8d T0 = _mm512_shuffle_pd(zmm0, zmm1, 0x00); \
 	Packet8d T1 = _mm512_shuffle_pd(zmm0, zmm1, 0xFF); \
 	Packet8d T2 = _mm512_shuffle_pd(zmm2, zmm3, 0x00); \
@@ -559,9 +582,10 @@ typedef const char * SsePrefetchPtrType;
 	T0 = _mm512_shuffle_f64x2(zmm0, pzero_8d, 0x44); \
 	T1 = _mm512_shuffle_f64x2(zmm0, pzero_8d, 0xEE); \
 	to = _mm512_add_pd(T0, T1); \
-}
+} while( 0 )
+
 #define preduceadd_8x16f(zmm0, zmm1, zmm2, zmm3, zmm4, zmm5, zmm6, zmm7, to) \
-{ \
+do { \
 	Packet16f T0 = _mm512_unpacklo_ps(zmm0, zmm1); \
 	Packet16f T1 = _mm512_unpackhi_ps(zmm0, zmm1); \
 	Packet16f T2 = _mm512_unpacklo_ps(zmm2, zmm3); \
@@ -589,13 +613,13 @@ typedef const char * SsePrefetchPtrType;
 	zmm0 = _mm512_shuffle_f32x4(T0, T0, 0x88); \
 	zmm4 = _mm512_shuffle_f32x4(T0, T0, 0xDD); \
 	to = _mm512_maskz_add_ps(0x00FF, zmm0, zmm4); \
-}
+} while( 0 )
 
 // --------------------------------------------------------------------
 // argmax
 // --------------------------------------------------------------------
 #define pargmax_8d( zmm_x, zmm_arg, max_arg ) \
-{ \
+do { \
 	__m256d ymm_x0, ymm_x1; \
 	__m128d xmm_x0, xmm_x1; \
 	__m256i ymm_arg; \
@@ -621,9 +645,10 @@ typedef const char * SsePrefetchPtrType;
 		max_arg = _mm_extract_epi64( xmm_arg, 1 ); \
 	else \
 		max_arg = _mm_extract_epi64( xmm_arg, 0 ); \
-}
+} while( 0 )
+
 #define pargmax_16f( zmm_x, zmm_arg, max_arg ) \
-{ \
+do { \
 	__m256 ymm_x0, ymm_x1; \
 	__m128 xmm_x0, xmm_x1; \
 	__m256i ymm_arg; \
@@ -653,7 +678,7 @@ typedef const char * SsePrefetchPtrType;
 	lt8       = _mm_cmplt_epu32_mask( _mm_castps_si128(xmm_x0), _mm_castps_si128(xmm_x1) ); \
 	xmm_arg   = _mm_mask_shuffle_epi32( xmm_arg, lt8, xmm_arg, 0x01 ); \
 	max_arg   = _mm_cvtsi128_si32( xmm_arg ); \
-}
+} while( 0 )
 
 // --------------------------------------------------------------------
 // process control
@@ -662,7 +687,7 @@ typedef const char * SsePrefetchPtrType;
 
 // handle m-dim edges <= 128
 #define m_powedges(MR, x, EdgeFunc, ...) \
-{ \
+do { \
 	int x_i = x; \
 	if ( MR < x_i) { \
 		for ( ; x_i > MR; x_i-= MR ) { \
@@ -682,10 +707,11 @@ typedef const char * SsePrefetchPtrType;
 		if (   2 <= MR && x_i&  2 ) EdgeFunc(   2, __VA_ARGS__ ); \
 		if (   1 <= MR && x_i&  1 ) EdgeFunc(   1, __VA_ARGS__ ); \
 	}\
-}
-// handle n-dim edges <= 16
+} while( 0 )
+
+// handle n-dim edges <= 32
 #define n_powedges(NR, x, EdgeFunc, ...) \
-{ \
+do { \
 	int x_i = x; \
 	if ( NR < x_i ) { \
 		for (; x_i > NR; x_i-=NR) { \
@@ -697,15 +723,17 @@ typedef const char * SsePrefetchPtrType;
 		EdgeFunc(NR, __VA_ARGS__); \
 	} \
 	else { \
-		if ( 8 <= NR && x_i& 8 ) EdgeFunc( 8, __VA_ARGS__ ); \
-		if ( 4 <= NR && x_i& 4 ) EdgeFunc( 4, __VA_ARGS__ ); \
-		if ( 2 <= NR && x_i& 2 ) EdgeFunc( 2, __VA_ARGS__ ); \
-		if ( 1 <= NR && x_i& 1 ) EdgeFunc( 1, __VA_ARGS__ ); \
+		if ( 16 <= NR && x_i&16 ) EdgeFunc( 16, __VA_ARGS__ ); \
+		if (  8 <= NR && x_i& 8 ) EdgeFunc(  8, __VA_ARGS__ ); \
+		if (  4 <= NR && x_i& 4 ) EdgeFunc(  4, __VA_ARGS__ ); \
+		if (  2 <= NR && x_i& 2 ) EdgeFunc(  2, __VA_ARGS__ ); \
+		if (  1 <= NR && x_i& 1 ) EdgeFunc(  1, __VA_ARGS__ ); \
 	}\
-}
+} while( 0 )
+
 // handle k-dim edges <= 8
 #define k_alignedges(KA, x, IterFunc, ...) \
-{ \
+do { \
 	int x_i = x; \
 	if ( KA < x_i ) { \
 		for ( ; x_i > KA; x_i-=KA ) { \
@@ -718,11 +746,12 @@ typedef const char * SsePrefetchPtrType;
 	else { \
 		IterFunc( x_i, __VA_ARGS__); \
 	} \
-}
+} while( 0 )
 
 #define m_packloop(Pack, x, IterFunc, ...) \
-{ \
+do { \
 	int mp_ = 0; \
+	/* ignore x&128 as it never used */ \
 	if (64 <= Pack && x&64) { \
 		IterFunc((mp_+ 0), __VA_ARGS__); IterFunc((mp_+ 1), __VA_ARGS__); \
 		IterFunc((mp_+ 2), __VA_ARGS__); IterFunc((mp_+ 3), __VA_ARGS__); \
@@ -815,10 +844,12 @@ typedef const char * SsePrefetchPtrType;
 		IterFunc((mp_+ 0), __VA_ARGS__); \
 		mp_ += 1; \
 	} \
-}
+} while( 0 )
+
 #define n_packloop(Pack, x, IterFunc, ...) \
-{ \
+do { \
 	int np_ = 0; \
+	/* ignore x&32 as it never used */ \
 	if (16 <= Pack && x&16) { \
 		IterFunc((np_+ 0), __VA_ARGS__); IterFunc((np_+ 1), __VA_ARGS__); \
 		IterFunc((np_+ 2), __VA_ARGS__); IterFunc((np_+ 3), __VA_ARGS__); \
@@ -857,22 +888,11 @@ typedef const char * SsePrefetchPtrType;
 		IterFunc((np_+ 0), __VA_ARGS__); \
 		np_ += 1; \
 	} \
-}
+} while( 0 )
 
 #define k_packloop(Pack, x, IterFunc, ...) \
-{ \
+do { \
 	int kp_ = 0; \
-	if (16 <= Pack && x&16) { \
-		IterFunc((kp_+ 0), __VA_ARGS__); IterFunc((kp_+ 1), __VA_ARGS__); \
-		IterFunc((kp_+ 2), __VA_ARGS__); IterFunc((kp_+ 3), __VA_ARGS__); \
-		IterFunc((kp_+ 4), __VA_ARGS__); IterFunc((kp_+ 5), __VA_ARGS__); \
-		IterFunc((kp_+ 6), __VA_ARGS__); IterFunc((kp_+ 7), __VA_ARGS__); \
-		IterFunc((kp_+ 8), __VA_ARGS__); IterFunc((kp_+ 9), __VA_ARGS__); \
-		IterFunc((kp_+10), __VA_ARGS__); IterFunc((kp_+11), __VA_ARGS__); \
-		IterFunc((kp_+12), __VA_ARGS__); IterFunc((kp_+13), __VA_ARGS__); \
-		IterFunc((kp_+14), __VA_ARGS__); IterFunc((kp_+15), __VA_ARGS__); \
-		kp_ += 16; \
-	} \
 	if ( 8 <= Pack && x& 8) {\
 		IterFunc((kp_+ 0), __VA_ARGS__); \
 		IterFunc((kp_+ 1), __VA_ARGS__); \
@@ -900,98 +920,108 @@ typedef const char * SsePrefetchPtrType;
 		IterFunc((kp_+ 0), __VA_ARGS__); \
 		kp_ += 1; \
 	} \
-}
+} while( 0 )
+
 // --------------------------------------------------------------------
 // misc.
 // --------------------------------------------------------------------
 // zmm
 #define print_8d(fmt, a) \
-{ \
+do { \
 	double mem[8]; \
 	pstoreu_8d(mem, (Packet8d)(a)); \
 	for (int i = 0; i < 8; i++) printf(fmt, mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_8l(fmt, a) \
-{ \
+do { \
 	__int64_t mem[8]; \
 	pstoreu_8l( mem, a ); \
 	for (int i = 0; i < 8; i++) printf(fmt, (int)mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_16f(fmt, a) \
-{ \
+do { \
 	float mem[16]; \
 	pstoreu_16f(mem, (Packet16f)(a)); \
 	for (int i = 0; i < 16; i++) printf(fmt, mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_16i(fmt, a) \
-{ \
+do { \
 	__int32_t mem[16]; \
 	pstoreu_16i(mem, (Packet16i)(a)); \
 	for (int i = 0; i < 16; i++) printf(fmt, (int)mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
 
 // ymm
 #define print_4d(fmt, a) \
-{ \
+do { \
 	double mem[4]; \
 	_mm256_store_pd( mem, a ); \
 	for (int i = 0; i < 4; i++) printf(fmt, mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_4l(fmt, a) \
-{ \
+do { \
 	__int64_t mem[4]; \
 	_mm256_store_epi64( mem, a ); \
 	for (int i = 0; i < 4; i++) printf(fmt, (int)mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_8f(fmt, a) \
-{ \
+do { \
 	float mem[8]; \
 	_mm256_store_ps(mem, (Packet8f)(a)); \
 	for (int i = 0; i < 8; i++) printf(fmt, mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_8i(fmt, a) \
-{ \
+do { \
 	__int32_t mem[8]; \
 	_mm256_store_epi32(mem, (Packet8i)(a)); \
 	for (int i = 0; i < 8; i++) printf(fmt, (int)mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
 
 // xmm
 #define print_2d(fmt, a) \
-{ \
+do{ \
 	double mem[2]; \
 	_mm_store_pd( mem, a ); \
 	for (int i = 0; i < 2; i++) printf(fmt, mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_2l(fmt, a) \
-{ \
+do { \
 	__int64_t mem[2]; \
 	_mm_store_epi64( mem, a ); \
 	for (int i = 0; i < 2; i++) printf(fmt, (int)mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_4f(fmt, a) \
-{ \
+do { \
 	float mem[4]; \
 	_mm_store_ps(mem, (Packet4f)(a)); \
 	for (int i = 0; i < 4; i++) printf(fmt, mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
+
 #define print_4i(fmt, a) \
-{ \
+do { \
 	__int32_t mem[4]; \
 	_mm_store_epi32(mem, (Packet4i)(a)); \
 	for (int i = 0; i < 4; i++) printf(fmt, (int)mem[i]); \
 	printf("\n"); \
-}
+} while( 0 )
 
 #endif

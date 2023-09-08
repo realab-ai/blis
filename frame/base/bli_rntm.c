@@ -316,6 +316,26 @@ void bli_rntm_set_ways
 
 // -----------------------------------------------------------------------------
 
+void bli_rntm_set_nt_for_size
+	(
+	   dim_t   m,
+	   dim_t   n,
+	   dim_t   k,
+	   num_t   dt,
+ const cntx_t* cntx,
+	   rntm_t* rntm
+	)
+{
+	dim_t mr    = bli_cntx_get_blksz_def_dt( dt, BLIS_MR, cntx );
+	dim_t nr    = bli_cntx_get_blksz_def_dt( dt, BLIS_NR, cntx );
+	dim_t nt    = bli_rntm_num_threads( rntm );
+	dim_t i_max = (int)(m/mr/BLIS_THREAD_MAX_IR) ==0 ? 1 : (int)(m/mr/BLIS_THREAD_MAX_IR);
+	dim_t j_max = (int)(n/nr/BLIS_THREAD_MAX_JR) ==0 ? 1 : (int)(n/nr/BLIS_THREAD_MAX_JR);
+	dim_t k_max = 1;
+	nt = ( nt > i_max*j_max*k_max ) ? ( i_max*j_max*k_max ) : nt;
+	bli_rntm_set_num_threads_only( nt, rntm );
+}
+
 void bli_rntm_set_ways_for_op
      (
        opid_t  l3_op,

@@ -333,6 +333,16 @@ BLIS_EXPORT_BLIS void bli_rntm_set_ways
        rntm_t* rntm
      );
 
+void bli_rntm_set_nt_for_size
+     (
+        dim_t   m,
+		dim_t   n,
+		dim_t   k,
+		num_t   dt,
+  const cntx_t* cntx,
+		rntm_t* rntm
+     );
+
 BLIS_EXPORT_BLIS void bli_rntm_set_ways_for_op
      (
        opid_t  l3_op,

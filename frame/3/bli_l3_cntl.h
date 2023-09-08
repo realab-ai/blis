@@ -48,7 +48,8 @@ void bli_l3_cntl_create_if
        const obj_t*   c,
              pool_t*  pool,
        const cntl_t*  cntl_orig,
-             cntl_t** cntl_use
+             cntl_t** cntl_use,
+	   const rntm_t*  rntm
      );
 
 BLIS_EXPORT_BLIS void bli_l3_cntl_free

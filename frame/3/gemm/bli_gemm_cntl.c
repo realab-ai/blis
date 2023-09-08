@@ -41,10 +41,11 @@ cntl_t* bli_gemm_cntl_create
        opid_t  family,
        pack_t  schema_a,
        pack_t  schema_b,
-       void_fp ker
+       void_fp ker,
+ const rntm_t* rntm
      )
 {
-	return bli_gemmbp_cntl_create( pool, family, schema_a, schema_b, ker );
+	return bli_gemmbp_cntl_create( pool, family, schema_a, schema_b, ker, rntm );
 }
 
 // -----------------------------------------------------------------------------
@@ -55,11 +56,15 @@ cntl_t* bli_gemmbp_cntl_create
        opid_t  family,
        pack_t  schema_a,
        pack_t  schema_b,
-       void_fp ker
+       void_fp ker,
+ const rntm_t* rntm
      )
 {
 	void_fp macro_kernel_fp  = NULL;
 	cntl_t* post_node = NULL;
+	const dim_t jc    = bli_rntm_jc_ways( rntm );
+	const dim_t pc    = bli_rntm_pc_ways( rntm );
+	const dim_t ic    = bli_rntm_ic_ways( rntm );
 	bool unpacked_ab  = ( schema_a == BLIS_NOT_PACKED && schema_b == BLIS_NOT_PACKED ) ? true : false;
 	// Choose the default macrokernel based on the operation family...
 	if      ( family == BLIS_GEMM )  macro_kernel_fp = bli_gemm_ker_var2;
@@ -122,7 +127,7 @@ cntl_t* bli_gemmbp_cntl_create
 	}
 
 	// Create a node for partitioning the m dimension by MC.
-	if ( schema_a != BLIS_NOT_PACKED )
+	if ( schema_a != BLIS_NOT_PACKED || ic > 1 )
 	{
 		cntl_t* gemm_cntl_op_bp = bli_gemm_cntl_create_node
 		(
@@ -154,7 +159,7 @@ cntl_t* bli_gemmbp_cntl_create
 		post_node = gemm_cntl_packb;
 	}
 
-	if ( !unpacked_ab )
+	if ( !unpacked_ab || pc > 1 )
 	{
 		// Create a node for partitioning the k dimension by KC.
 		cntl_t* gemm_cntl_mm_op = bli_gemm_cntl_create_node
@@ -168,7 +173,7 @@ cntl_t* bli_gemmbp_cntl_create
 		post_node = gemm_cntl_mm_op;
 	}
 
-	if ( schema_b != BLIS_NOT_PACKED )
+	if ( schema_b != BLIS_NOT_PACKED || jc > 1 )
 	{
 		// Create a node for partitioning the n dimension by NC.
 		cntl_t* gemm_cntl_vl_mm = bli_gemm_cntl_create_node

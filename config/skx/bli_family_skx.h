@@ -37,7 +37,7 @@
 
 // -- THREADING PARAMETERS -----------------------------------------------------
 
-#define BLIS_THREAD_RATIO_M     3
+#define BLIS_THREAD_RATIO_M     1
 #define BLIS_THREAD_RATIO_N     2
 
 #define BLIS_THREAD_MAX_IR      1

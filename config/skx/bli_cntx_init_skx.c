@@ -169,8 +169,8 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	//                                              s      d      c      z
 	bli_blksz_init_easy( &blkszs[ BLIS_MR ],       48,    24,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR ],        8,     8,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC ],      432,   240,    -1,    -1 );
-	bli_blksz_init     ( &blkszs[ BLIS_KC ],      432,   304,    -1,    -1,
+	bli_blksz_init_easy( &blkszs[ BLIS_MC ],      384,   288,    -1,    -1 );
+	bli_blksz_init     ( &blkszs[ BLIS_KC ],      336,   280,    -1,    -1,
 	                                              432,   320,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC ],     3072,  3072,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_AF ],        8,     8,    -1,    -1 );
@@ -178,9 +178,9 @@ void bli_cntx_init_skx( cntx_t* cntx )
 
 	// Initialize sup thresholds with architecture-appropriate values.
 	//                                              s      d      c      z
-	bli_blksz_init_easy( &blkszs[ BLIS_MT ],      432,   208,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_NT ],      432,   208,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KT ],      432,   208,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MT ],      256,   192,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_NT ],      768,   576,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KT ],      200,   200,    -1,    -1 );
 
 	// Initialize level-3 sup blocksize objects with architecture-specific
 	// values.
@@ -188,8 +188,8 @@ void bli_cntx_init_skx( cntx_t* cntx )
 	bli_blksz_init     ( &blkszs[ BLIS_MR_SUP ],   48,    24,    -1,    -1,
 	                                               48,    24,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NR_SUP ],    8,     8,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_MC_SUP ],  432,   240,    -1,    -1 );
-	bli_blksz_init_easy( &blkszs[ BLIS_KC_SUP ],  336,   320,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_MC_SUP ],  336,   240,    -1,    -1 );
+	bli_blksz_init_easy( &blkszs[ BLIS_KC_SUP ],  432,   320,    -1,    -1 );
 	bli_blksz_init_easy( &blkszs[ BLIS_NC_SUP ], 3072,  3072,    -1,    -1 );
 
 

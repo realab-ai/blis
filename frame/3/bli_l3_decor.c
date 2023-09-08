@@ -91,7 +91,7 @@ static void bli_l3_thread_decorator_entry( thrcomm_t* gl_comm, dim_t tid, const 
 	cntl_t* cntl_use;
 	pool_t* sba_pool = bli_apool_array_elem( tid, array );
 	bli_l3_cntl_create_if( family, schema_a, schema_b, 
-			               &a_t, &b_t, &c_t, sba_pool, NULL, &cntl_use );
+			               &a_t, &b_t, &c_t, sba_pool, NULL, &cntl_use, rntm );
 
 	// Create the root node of the current thread's thrinfo_t structure.
 	// The root node is the *parent* of the node corresponding to the first

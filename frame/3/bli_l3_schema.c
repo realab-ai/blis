@@ -40,7 +40,8 @@ void bli_l3_set_schemas
              obj_t*  a,
              obj_t*  b,
        const obj_t*  c,
-       const cntx_t* cntx
+       const cntx_t* cntx,
+	   const rntm_t* rntm
      )
 {
 	// Begin with pack schemas for native execution.
@@ -71,9 +72,8 @@ void bli_l3_set_schemas
 	}
 	else
 	{
-		if ( bli_info_get_enable_fip() && 
-			( family == BLIS_GEMM ||
-			  family == BLIS_GEMMT ) )
+		if ( bli_info_get_enable_fup() && 
+			( family == BLIS_GEMM ) )
 		{
 			const num_t dt   = bli_obj_dt( c );
 			const dim_t m    = bli_obj_length_after_trans( c );
@@ -81,12 +81,18 @@ void bli_l3_set_schemas
 			const dim_t k    = bli_obj_width_after_trans( a );
 			const dim_t mr   = bli_cntx_get_blksz_def_dt( dt, BLIS_MR, cntx );
 			const dim_t nr   = bli_cntx_get_blksz_def_dt( dt, BLIS_NR, cntx );
+			// const dim_t nt   = bli_rntm_num_threads( rntm );
+			// const dim_t jc   = bli_rntm_jc_ways( rntm );
+			// const dim_t jr   = bli_rntm_jr_ways( rntm );
+			// const dim_t pc   = bli_rntm_pc_ways( rntm );
+			const dim_t ic   = bli_rntm_ic_ways( rntm );
+			// const dim_t ir   = bli_rntm_ir_ways( rntm );
 			const dim_t rs_a = bli_obj_has_notrans( a ) ? bli_obj_row_stride( a ) : bli_obj_col_stride( a );
 			const dim_t cs_b = bli_obj_has_notrans( b ) ? bli_obj_col_stride( b ) : bli_obj_row_stride( b );
 
-			// Interleaved packing according with reference: Xu, et al., 2023, 
-			// GEMMFIP: Unifying GEMM in BLIS
-			if ( bli_cntx_l3_supb_thresh_is_met( dt, m, n, k, cntx ) )
+			// const dim_t md   = m/( pow( (double)nt, (double)BLIS_THREAD_RATIO_M/(BLIS_THREAD_RATIO_M+BLIS_THREAD_RATIO_N) ) );
+			const dim_t md   = m/ic;
+			if ( bli_cntx_l3_supb_thresh_is_met( dt, md, n, k, cntx ) )
 			{
 				schema_b = BLIS_NOT_PACKED;
 				// even no pack, we still set the panel_dim and panel_stride 
@@ -94,7 +100,7 @@ void bli_l3_set_schemas
 				bli_obj_set_panel_dim( nr, b );
 				bli_obj_set_panel_stride( nr*cs_b, b );
 			}
-			if ( bli_cntx_l3_supa_thresh_is_met( dt, m, n, k, cntx ) )
+			if ( bli_cntx_l3_supa_thresh_is_met( dt, md, n, k, cntx ) )
 			{
 				schema_a = BLIS_NOT_PACKED;
 				// even no pack, we still set the panel_dim and panel_stride 
